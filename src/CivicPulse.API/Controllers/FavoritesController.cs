@@ -1,6 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using CivicPulse.Core.Entities;
 using CivicPulse.Core.Interfaces;
 using CivicPulse.Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CivicPulse.API.Controllers;
@@ -8,6 +11,7 @@ namespace CivicPulse.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[Authorize]
 public class FavoritesController : ControllerBase
 {
     private readonly ILocationRepository _repo;
@@ -19,7 +23,7 @@ public class FavoritesController : ControllerBase
         _geocoding = geocoding;
     }
 
-    /// <summary>List all favorites for the requesting user (userId from header for now; JWT in Sprint 3).</summary>
+    /// <summary>List all favorites for the authenticated user.</summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetFavorites(CancellationToken ct)
@@ -69,7 +73,7 @@ public class FavoritesController : ControllerBase
         return CreatedAtAction(nameof(GetFavorites), new { id = favorite.Id }, new { favorite.Id, location.Name });
     }
 
-    /// <summary>Remove a location from favorites.</summary>
+    /// <summary>Remove a location from the authenticated user's favorites.</summary>
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteFavorite(int id, CancellationToken ct)
@@ -78,9 +82,11 @@ public class FavoritesController : ControllerBase
         return NoContent();
     }
 
-    // Placeholder until JWT auth is wired in Sprint 3
+    // ASP.NET Core 9 uses JsonWebTokenHandler which does not remap "sub" to NameIdentifier
     private string GetUserId() =>
-        Request.Headers.TryGetValue("X-User-Id", out var val) ? val.ToString() : "anonymous";
+        User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+        ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? throw new InvalidOperationException("JWT sub claim missing.");
 }
 
 public record AddFavoriteRequest(

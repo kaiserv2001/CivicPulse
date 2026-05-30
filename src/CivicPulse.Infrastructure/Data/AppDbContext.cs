@@ -7,6 +7,7 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+    public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<Location> Locations => Set<Location>();
     public DbSet<FavoriteLocation> FavoriteLocations => Set<FavoriteLocation>();
     public DbSet<WeatherCache> WeatherCaches => Set<WeatherCache>();
@@ -14,6 +15,14 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<AppUser>(b =>
+        {
+            b.HasKey(u => u.Id);
+            b.HasIndex(u => u.Email).IsUnique();
+            b.Property(u => u.Email).HasMaxLength(256).IsRequired();
+            b.Property(u => u.PasswordHash).IsRequired();
+        });
+
         modelBuilder.Entity<Location>(b =>
         {
             b.HasKey(l => l.Id);

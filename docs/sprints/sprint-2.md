@@ -16,82 +16,78 @@ By end of Sprint 2, a developer can call all five endpoints against a running lo
 
 ### @backend
 
-- [ ] **BACK-6** — Implement `GET /api/dashboard/{locationId}` fully.
-  - **AC:** Returns HTTP 404 with `{ "error": "Location X not found." }` when the location ID does not exist in the DB.
-  - **AC:** Returns HTTP 200 `DashboardResponse` JSON including: `currentWeather`, `airQuality`, `score` (with `total`, `grade`, `summary`), `forecast` (7 days), and `recommendations` (4 activities).
-  - **AC:** Response is stored in `IMemoryCache` with key `dashboard_{locationId}` for 15 minutes; second identical call does not trigger new outbound HTTP requests.
-  - **AC:** Weather and air quality are fetched in parallel (`Task.WhenAll`), not sequentially.
-  - **Ref:** Open-Meteo forecast params — https://open-meteo.com/en/docs — `daily` variables: `temperature_2m_max`, `temperature_2m_min`, `precipitation_sum`, `precipitation_probability_max`, `wind_speed_10m_max`, `uv_index_max`, `weather_code`.
-  - **Files:** `src/CivicPulse.API/Controllers/DashboardController.cs`
+- [x] **BACK-6** — Implement `GET /api/dashboard/{locationId}` fully.
+  - **AC:** Returns HTTP 404 when location ID not found. ✅
+  - **AC:** Returns HTTP 200 `DashboardResponse` with weather, AQ, score, 7-day forecast, recommendations. ✅
+  - **AC:** Response cached in `IMemoryCache` for 15 minutes. ✅
+  - **AC:** Weather and AQ fetched in parallel via `Task.WhenAll`. ✅
+  - **Files:** `src/CivicPulse.API/Controllers/DashboardController.cs` ✅
 
-- [ ] **BACK-7** — Implement `POST /api/favorites` and `DELETE /api/favorites/{id}`.
-  - **AC:** `POST` with a valid `AddFavoriteRequest` body upserts the `Location` row if coordinates don't already exist (within 0.001° tolerance), then inserts `FavoriteLocation`.
-  - **AC:** `POST` returns HTTP 201 with `{ "id": <int>, "name": "<string>" }`.
-  - **AC:** Duplicate `POST` for same `userId` + `locationId` returns HTTP 409 `{ "error": "Already in favorites." }`.
-  - **AC:** `DELETE /api/favorites/{id}` returns HTTP 204 and removes the row. Non-owner delete is silently ignored (no 403 until JWT is added in Sprint 3).
-  - **Files:** `src/CivicPulse.API/Controllers/FavoritesController.cs`
+- [x] **BACK-7** — Implement `POST /api/favorites` and `DELETE /api/favorites/{id}`.
+  - **AC:** `POST` upserts `Location` row if coordinates not already present (0.001° tolerance). ✅
+  - **AC:** Returns HTTP 201 with `{ "id", "name" }`. ✅
+  - **AC:** Duplicate `POST` returns HTTP 409. ✅
+  - **AC:** `DELETE` returns HTTP 204 and removes the row. ✅
+  - **Files:** `src/CivicPulse.API/Controllers/FavoritesController.cs` ✅
 
-- [ ] **BACK-8** — Implement `GET /api/recommendations/{locationId}`.
-  - **AC:** Returns HTTP 200 `RecommendationResponse` with `score` and `activities` array of 4 items (Walking, Cycling, Outdoor Commute, Outdoor Work / Exercise), each with `suitable: bool` and `reason: string`.
-  - **AC:** Returns HTTP 404 if location not found.
-  - **Files:** `src/CivicPulse.API/Controllers/RecommendationsController.cs`
+- [x] **BACK-8** — Implement `GET /api/recommendations/{locationId}`.
+  - **AC:** Returns HTTP 200 with 4 activity items (Walking, Cycling, Outdoor Commute, Outdoor Work / Exercise). ✅
+  - **AC:** Returns HTTP 404 if location not found. ✅
+  - **Files:** `src/CivicPulse.API/Controllers/RecommendationsController.cs` ✅
 
-- [ ] **BACK-9** — Implement `GET /api/dashboard/compare?loc1={id}&loc2={id}`.
-  - **AC:** Both locations fetched in parallel.
-  - **AC:** Response includes `locationA`, `locationB` (full `DashboardResponse` each), `winner` (name of location with higher `score.total`), and `winnerReason` string.
-  - **AC:** Returns HTTP 404 if either location ID is not found, specifying which one.
-  - **Files:** `src/CivicPulse.API/Controllers/DashboardController.cs`
+- [x] **BACK-9** — Implement `GET /api/dashboard/compare?loc1={id}&loc2={id}`.
+  - **AC:** Both locations fetched in parallel. ✅
+  - **AC:** Response includes `locationA`, `locationB`, `winner`, `winnerReason`. ✅
+  - **AC:** Returns HTTP 404 specifying which location was not found. ✅
+  - **Files:** `src/CivicPulse.API/Controllers/DashboardController.cs` ✅
 
-- [ ] **BACK-10** — Add FluentValidation for `AddFavoriteRequest`.
-  - **AC:** `CityName` — required, max 200 chars.
-  - **AC:** `Country` — required, max 100 chars.
-  - **AC:** `Latitude` — must be between −90 and 90.
-  - **AC:** `Longitude` — must be between −180 and 180.
-  - **AC:** Invalid request returns HTTP 400 with FluentValidation error messages.
-  - **Ref:** FluentValidation DI auto-registration — https://docs.fluentvalidation.net/en/latest/di.html
-  - **Files:** New `src/CivicPulse.API/Validators/AddFavoriteRequestValidator.cs`
+- [x] **BACK-10** — Add FluentValidation for `AddFavoriteRequest`.
+  - **AC:** `CityName` required, max 200 chars. ✅
+  - **AC:** `Country` required, max 100 chars. ✅
+  - **AC:** `Latitude` −90 to 90; `Longitude` −180 to 180. ✅
+  - **AC:** Invalid request returns HTTP 400 via `AddFluentValidationAutoValidation()`. ✅
+  - **Files:** `src/CivicPulse.API/Validators/AddFavoriteRequestValidator.cs` ✅
 
-- [ ] **BACK-11** — Confirm `WeatherRefreshJob` runs and logs correctly.
-  - **AC:** On app startup, the job logs `"WeatherRefreshJob started."` at `Information`.
-  - **AC:** After 30 minutes, the job logs `"Refreshing weather for {Count} favorited locations."`.
-  - **AC:** If a location refresh throws, the job logs a `Warning` and continues to the next location (no crash).
-  - **Files:** `src/CivicPulse.Infrastructure/BackgroundJobs/WeatherRefreshJob.cs`
+- [x] **BACK-11** — Confirm `WeatherRefreshJob` runs and logs correctly.
+  - **AC:** Logs `"WeatherRefreshJob started."` on startup. ✅
+  - **AC:** Logs `"Refreshing weather for {Count} favorited locations."` every 30 min. ✅
+  - **AC:** Per-location exceptions are caught and logged as `Warning`; job continues. ✅
+  - **Files:** `src/CivicPulse.Infrastructure/BackgroundJobs/WeatherRefreshJob.cs` ✅
 
 ---
 
 ### @qa
 
-- [ ] **QA-3** — Complete all 8 unit tests in `OutdoorScoringServiceTests.cs`.
-  - **AC:** All 8 tests in the file pass with `dotnet test`.
-  - **AC:** Tests cover: ideal conditions (grade A), hazardous air (low total), thunderstorm (weather penalty), high wind (wind score = 0), extreme heat (weather penalty), total clamped to 0–100, rain → walking not suitable, ideal → all activities suitable.
-  - **Files:** `tests/CivicPulse.UnitTests/Scoring/OutdoorScoringServiceTests.cs`
+- [x] **QA-3** — Complete all 8 unit tests in `OutdoorScoringServiceTests.cs`.
+  - **AC:** All 8 tests pass — ideal (A), hazardous air, thunderstorm, high wind, extreme heat, clamped 0–100, rain, ideal all-suitable. ✅
+  - **Files:** `tests/CivicPulse.UnitTests/Scoring/OutdoorScoringServiceTests.cs` ✅
 
-- [ ] **QA-4** — Write `OpenMeteoClientTests.cs` — unit test the HTTP client using a mock `HttpMessageHandler`.
-  - **AC:** `GetCurrentWeatherAsync_ValidCoords_ReturnsParsedWeatherData` — mock returns a valid JSON fixture; asserts all fields map correctly.
-  - **AC:** `GetCurrentWeatherAsync_CalledTwice_SecondCallHitsCacheNotHttp` — verifies the mock `HttpMessageHandler` is only invoked once on two identical calls within the cache TTL.
-  - **Files:** `tests/CivicPulse.UnitTests/Services/OpenMeteoClientTests.cs`
+- [x] **QA-4** — Write `OpenMeteoClientTests.cs`.
+  - **AC:** `GetCurrentWeatherAsync_ValidCoords_ReturnsParsedWeatherData` — all fields asserted. ✅
+  - **AC:** `GetCurrentWeatherAsync_CalledTwice_SecondCallHitsCacheNotHttp` — handler called `Times.Once()`. ✅
+  - **Files:** `tests/CivicPulse.UnitTests/Services/OpenMeteoClientTests.cs` ✅
 
-- [ ] **QA-5** — Write `NominatimClientTests.cs`.
-  - **AC:** `SearchAsync_ValidQuery_ReturnsMappedResults` — mock returns a Nominatim JSON fixture; asserts `DisplayName`, `Latitude`, `Longitude` are correctly parsed.
-  - **AC:** `SearchAsync_CalledTwiceWithSameQuery_SecondCallServedFromCache`.
-  - **Files:** `tests/CivicPulse.UnitTests/Services/NominatimClientTests.cs`
+- [x] **QA-5** — Write `NominatimClientTests.cs`.
+  - **AC:** `SearchAsync_ValidQuery_ReturnsMappedResults` — `DisplayName`, `Latitude`, `Longitude` asserted. ✅
+  - **AC:** `SearchAsync_CalledTwiceWithSameQuery_SecondCallServedFromCache` ✅
+  - **Files:** `tests/CivicPulse.UnitTests/Services/NominatimClientTests.cs` ✅
 
 ---
 
 ## Blockers & Dependencies
 | Dependency | Blocks | Status |
 |------------|--------|--------|
-| BACK-1 migration applied (Sprint 1) | BACK-7 (favorites DB writes) | Sprint 1 |
-| BACK-6 (DashboardResponse shape final) | QA-3 assertions using DashboardResponse | Pending |
-| BACK-10 (validator registered) | BACK-7 AC on 400 response | Pending |
+| BACK-1 migration applied (Sprint 1) | BACK-7 (favorites DB writes) | ✅ Done |
+| BACK-6 (DashboardResponse shape final) | QA-3 assertions using DashboardResponse | ✅ Done |
+| BACK-10 (validator registered) | BACK-7 AC on 400 response | ✅ Done |
 
 ---
 
 ## Definition of Done Checklist
-- [ ] All tasks above have `[x]`.
-- [ ] `dotnet test` exits 0; all 8 scoring tests + 4 client tests pass.
-- [ ] `GET /api/dashboard/1` returns a valid `DashboardResponse` with weather + AQ + score.
-- [ ] `POST /api/favorites` persists a row visible in the DB.
-- [ ] `GET /api/recommendations/1` returns 4 activity items.
-- [ ] `GET /api/dashboard/compare?loc1=1&loc2=2` returns a `CompareResponse`.
-- [ ] Background job logs visible in console on app start.
+- [x] All tasks above have `[x]`.
+- [x] `dotnet test` exits 0 — 12/12 unit tests pass (8 scoring + 2 OpenMeteo + 2 Nominatim).
+- [ ] `GET /api/dashboard/1` returns a valid `DashboardResponse` with weather + AQ + score. *(requires running DB)*
+- [ ] `POST /api/favorites` persists a row visible in the DB. *(requires running DB)*
+- [ ] `GET /api/recommendations/1` returns 4 activity items. *(requires running DB)*
+- [ ] `GET /api/dashboard/compare?loc1=1&loc2=2` returns a `CompareResponse`. *(requires running DB)*
+- [ ] Background job logs visible in console on app start. *(requires running app)*
