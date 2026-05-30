@@ -1,4 +1,7 @@
 @inherits LayoutComponentBase
+@inject AuthState Auth
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <div class="page">
     <NavMenu />
@@ -8,3 +11,13 @@
         </div>
     </main>
 </div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await Auth.TryRestoreAsync(JS);
+    }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}

@@ -31,9 +31,14 @@ try
         .WriteTo.Console()
         .WriteTo.File("logs/civicpulse-.log", rollingInterval: RollingInterval.Day));
 
-    // EF Core — ref: https://learn.microsoft.com/ef/core/dbcontext-configuration/
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // EF Core — use InMemory when USE_INMEMORY env var is set (no SQL Server required)
+    var useInMemory = builder.Configuration["USE_INMEMORY"] == "1"
+                   || Environment.GetEnvironmentVariable("USE_INMEMORY") == "1";
+    if (useInMemory)
+        builder.Services.AddDbContext<AppDbContext>(o => o.UseInMemoryDatabase("CivicPulse_Dev"));
+    else
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     // Caching
     builder.Services.AddMemoryCache();
@@ -59,7 +64,7 @@ try
     builder.Services.AddHttpClient<IGeocodingService, NominatimClient>(c =>
     {
         c.BaseAddress = new Uri("https://nominatim.openstreetmap.org/");
-        c.DefaultRequestHeaders.Add("User-Agent", "CivicPulse/1.0 (portfolio project; contact@example.com)");
+        c.DefaultRequestHeaders.Add("User-Agent", "CivicPulse/1.0 (raynorbuhian9@gmail.com)");
         c.Timeout = TimeSpan.FromSeconds(10);
     });
 

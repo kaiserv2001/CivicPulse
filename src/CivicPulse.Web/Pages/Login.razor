@@ -2,6 +2,7 @@
 @inject ApiClient Api
 @inject AuthState Auth
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>@(_isRegister ? "Register" : "Sign In") — CivicPulse</PageTitle>
 
@@ -69,7 +70,7 @@
 
         if (success && token is not null)
         {
-            Auth.SetToken(token, _form.Email);
+            Auth.SetToken(token, _form.Email, JS);
             Nav.NavigateTo(ReturnUrl ?? "/");
         }
         else

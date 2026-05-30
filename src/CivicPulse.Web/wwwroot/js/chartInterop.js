@@ -1,3 +1,17 @@
+window.authStorage = {
+    save: function (token, email) {
+        localStorage.setItem('cp_token', token);
+        localStorage.setItem('cp_email', email);
+    },
+    load: function () {
+        return { token: localStorage.getItem('cp_token'), email: localStorage.getItem('cp_email') };
+    },
+    clear: function () {
+        localStorage.removeItem('cp_token');
+        localStorage.removeItem('cp_email');
+    }
+};
+
 window.chartInterop = {
     _charts: {},
 

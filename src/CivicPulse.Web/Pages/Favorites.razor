@@ -1,6 +1,7 @@
 @page "/favorites"
 @inject ApiClient Api
 @inject AuthState Auth
+@implements IDisposable
 
 <PageTitle>My Favorites — CivicPulse</PageTitle>
 <h1>My Favorites</h1>
@@ -55,9 +56,20 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        Auth.OnChange += OnAuthChanged;
         if (!Auth.IsAuthenticated) return;
         await LoadAsync();
     }
+
+    private void OnAuthChanged()
+    {
+        if (Auth.IsAuthenticated && _favorites.Count == 0 && !_loading)
+            InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+        else
+            InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Auth.OnChange -= OnAuthChanged;
 
     private async Task LoadAsync()
     {

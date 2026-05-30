@@ -81,13 +81,13 @@ public class OpenMeteoClient : IWeatherService
         var result = response.Daily.Time
             .Select((date, i) => new WeatherForecastDay(
                 Date: DateTime.Parse(date),
-                MaxTemperatureCelsius: response.Daily.Temperature2mMax[i],
-                MinTemperatureCelsius: response.Daily.Temperature2mMin[i],
-                PrecipitationMm: response.Daily.PrecipitationSum[i],
-                PrecipitationProbability: response.Daily.PrecipitationProbabilityMax[i],
-                MaxWindSpeedKmh: response.Daily.WindSpeed10mMax[i],
-                UvIndexMax: response.Daily.UvIndexMax[i],
-                WeatherCode: response.Daily.WeatherCode[i]
+                MaxTemperatureCelsius: response.Daily.Temperature2mMax?[i] ?? 0,
+                MinTemperatureCelsius: response.Daily.Temperature2mMin?[i] ?? 0,
+                PrecipitationMm: response.Daily.PrecipitationSum?[i] ?? 0,
+                PrecipitationProbability: response.Daily.PrecipitationProbabilityMax?[i] ?? 0,
+                MaxWindSpeedKmh: response.Daily.WindSpeed10mMax?[i] ?? 0,
+                UvIndexMax: response.Daily.UvIndexMax?[i] ?? 0,
+                WeatherCode: response.Daily.WeatherCode?[i] ?? 0
             ))
             .ToList();
 
@@ -103,7 +103,7 @@ public class OpenMeteoClient : IWeatherService
         double UvIndex, double RelativeHumidity2m, int WeatherCode);
     private sealed record OpenMeteoDailyResponse(DailyBlock Daily);
     private sealed record DailyBlock(
-        string[] Time, double[] Temperature2mMax, double[] Temperature2mMin,
-        double[] PrecipitationSum, double[] PrecipitationProbabilityMax,
-        double[] WindSpeed10mMax, double[] UvIndexMax, int[] WeatherCode);
+        string[] Time, double[]? Temperature2mMax, double[]? Temperature2mMin,
+        double[]? PrecipitationSum, double[]? PrecipitationProbabilityMax,
+        double[]? WindSpeed10mMax, double[]? UvIndexMax, int[]? WeatherCode);
 }
