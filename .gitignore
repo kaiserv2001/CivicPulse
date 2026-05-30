@@ -1,0 +1,39 @@
+## Build output
+bin/
+obj/
+out/
+
+## VS / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+## Logs
+logs/
+*.log
+
+## Environment / secrets
+appsettings.Development.json
+appsettings.Local.json
+.env
+.env.*
+secrets.json
+
+## Docker
+.dockerignore
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Test results
+TestResults/
+coverage/
+*.trx
+
+## NuGet
+*.nupkg
+.nuget/
+packages/
