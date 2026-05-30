@@ -16,27 +16,27 @@ By end of Sprint 3, a user can open the browser, search for a city, see the full
 
 ### @frontend
 
-- [ ] **FRONT-1** — Build `CitySearchBox.razor` component.
+- [x] **FRONT-1** — Build `CitySearchBox.razor` component.
   - **AC:** Text input debounces 400 ms before calling `GET /api/locations/search?query={q}`.
   - **AC:** While loading, a spinner replaces the results list.
   - **AC:** On error (non-200 response), shows a red inline alert: "Search failed. Please try again."
   - **AC:** Results display as a dropdown list showing `displayName`. Clicking an item navigates to `/dashboard/{locationId}` (creates the location via `POST /api/favorites` first if not already saved).
   - **Files:** `src/CivicPulse.Web/Components/CitySearchBox.razor`
 
-- [ ] **FRONT-2** — Build `Dashboard.razor` page.
+- [x] **FRONT-2** — Build `Dashboard.razor` page.
   - **AC:** Page at `/dashboard/{locationId}` loads and renders `WeatherCard.razor`, `AqiBadge.razor`, `ScoreGauge.razor`, `ActivityList.razor`, and `ForecastChart.razor`.
   - **AC:** `ScoreGauge.razor` renders the numeric score (0–100) inside a coloured circle: green (A), teal (B), yellow (C), orange (D), red (F).
   - **AC:** `ForecastChart.razor` renders a Chart.js bar+line combo chart via JS interop: bars for daily precipitation (mm), line for max temperature (°C), x-axis = date labels for 7 days.
   - **AC:** Page shows a loading skeleton (grey placeholder cards) while awaiting the API response.
   - **Files:** `src/CivicPulse.Web/Pages/Dashboard.razor`, `src/CivicPulse.Web/Components/*.razor`
 
-- [ ] **FRONT-3** — Build `Compare.razor` page.
+- [x] **FRONT-3** — Build `Compare.razor` page.
   - **AC:** Page at `/compare` shows two `CitySearchBox` components side by side, labelled "City A" and "City B".
   - **AC:** Once both cities are selected, fetches `GET /api/dashboard/compare?loc1={id}&loc2={id}` and renders two `WeatherCard` + `ScoreGauge` columns.
   - **AC:** A banner at the top highlights the winning city with the reason string from the API response.
   - **Files:** `src/CivicPulse.Web/Pages/Compare.razor`
 
-- [ ] **FRONT-4** — Build `Favorites.razor` page.
+- [x] **FRONT-4** — Build `Favorites.razor` page.
   - **AC:** Page at `/favorites` lists all saved locations with their name, country, and "Go to dashboard" link.
   - **AC:** Each row has a "Remove" button that calls `DELETE /api/favorites/{id}` and removes the row from the list without a full page reload.
   - **AC:** Empty state shows: "No favorites yet. Search for a city to add one."
@@ -46,7 +46,7 @@ By end of Sprint 3, a user can open the browser, search for a city, see the full
 
 ### @backend
 
-- [ ] **BACK-12** — Add JWT authentication to `POST /api/favorites`, `DELETE /api/favorites/{id}`, and `GET /api/favorites`.
+- [x] **BACK-12** — Add JWT authentication to `POST /api/favorites`, `DELETE /api/favorites/{id}`, and `GET /api/favorites`.
   - **AC:** Requests without `Authorization: Bearer <token>` header return HTTP 401.
   - **AC:** `POST /api/auth/register` accepts `{ "email": string, "password": string }`, creates a user record, returns `{ "token": "<jwt>" }` with 24-hour expiry.
   - **AC:** `POST /api/auth/login` accepts same body, validates credentials, returns the same token shape or HTTP 401 on bad credentials.
@@ -58,13 +58,13 @@ By end of Sprint 3, a user can open the browser, search for a city, see the full
 
 ### @infrastructure
 
-- [ ] **INFRA-3** — Write the production multi-stage `Dockerfile` for `CivicPulse.API`.
+- [x] **INFRA-3** — Write the production multi-stage `Dockerfile` for `CivicPulse.API`.
   - **AC:** `docker build -f src/CivicPulse.API/Dockerfile -t civicpulse-api .` succeeds from the repo root.
   - **AC:** Final image is based on `mcr.microsoft.com/dotnet/aspnet:8.0` (runtime only, no SDK).
   - **AC:** `docker run -p 5000:8080 civicpulse-api` starts the API and `GET /swagger` is reachable.
   - **Files:** `src/CivicPulse.API/Dockerfile`
 
-- [ ] **INFRA-4** — Write GitHub Actions CI pipeline.
+- [x] **INFRA-4** — Write GitHub Actions CI pipeline.
   - **AC:** `.github/workflows/ci.yml` triggers on `push` and `pull_request` to `main`.
   - **AC:** Pipeline steps: `checkout` → `setup-dotnet@v4` (8.0.x) → `dotnet restore` → `dotnet build --no-restore -c Release` → `dotnet test --no-build -c Release`.
   - **AC:** Pipeline completes green on a clean push with all tests passing.
@@ -74,18 +74,18 @@ By end of Sprint 3, a user can open the browser, search for a city, see the full
 
 ### @qa
 
-- [ ] **QA-6** — Write `LocationsControllerTests.cs` (integration test using `WebApplicationFactory`).
+- [x] **QA-6** — Write `LocationsControllerTests.cs` (integration test using `WebApplicationFactory`).
   - **AC:** `Search_ValidQuery_Returns200WithResults` — calls real controller wired with an in-memory DB and a mocked `IGeocodingService`; asserts HTTP 200 and non-empty array.
   - **AC:** `Search_SingleCharQuery_Returns400` — asserts HTTP 400 with the error message.
   - **Files:** `tests/CivicPulse.IntegrationTests/Controllers/LocationsControllerTests.cs`
 
-- [ ] **QA-7** — Write `DashboardControllerTests.cs`.
+- [x] **QA-7** — Write `DashboardControllerTests.cs`.
   - **AC:** `GetDashboard_ExistingLocation_Returns200WithScore` — seeds a `Location` row, mocks `IWeatherService` and `IAirQualityService`, asserts HTTP 200 and `score.total` is between 0 and 100.
   - **AC:** `GetDashboard_NonExistentLocation_Returns404`.
   - **AC:** `Compare_BothLocationsExist_Returns200WithWinner`.
   - **Files:** `tests/CivicPulse.IntegrationTests/Controllers/DashboardControllerTests.cs`
 
-- [ ] **QA-8** — Write `FavoritesControllerTests.cs`.
+- [x] **QA-8** — Write `FavoritesControllerTests.cs`.
   - **AC:** `AddFavorite_NewLocation_Returns201`.
   - **AC:** `AddFavorite_Duplicate_Returns409`.
   - **AC:** `DeleteFavorite_OwnedFavorite_Returns204AndRowGone`.

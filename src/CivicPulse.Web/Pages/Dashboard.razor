@@ -1,0 +1,84 @@
+@page "/dashboard/{LocationId:int}"
+@inject ApiClient Api
+
+<PageTitle>@(_data?.LocationName ?? "Dashboard") — CivicPulse</PageTitle>
+
+@if (_loading)
+{
+    <div>
+        <div class="skeleton skeleton-title"></div>
+        <div class="row g-3 mt-2">
+            <div class="col-md-4"><div class="skeleton skeleton-card"></div></div>
+            <div class="col-md-4"><div class="skeleton skeleton-card"></div></div>
+            <div class="col-md-4"><div class="skeleton skeleton-card"></div></div>
+        </div>
+        <div class="row g-3 mt-1">
+            <div class="col-md-6"><div class="skeleton skeleton-card"></div></div>
+            <div class="col-md-6"><div class="skeleton skeleton-card"></div></div>
+        </div>
+    </div>
+}
+else if (_error is not null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_data is not null)
+{
+    <div class="mb-4">
+        <h1 class="mb-0">
+            @_data.LocationName
+            <small class="text-muted fs-4 fw-normal">@_data.Country</small>
+        </h1>
+        <small class="text-muted">Updated @_data.GeneratedAt.ToLocalTime().ToString("g")</small>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <ScoreGauge Score="_data.Score" />
+        </div>
+        <div class="col-md-4">
+            <WeatherCard Weather="_data.CurrentWeather" />
+        </div>
+        <div class="col-md-4">
+            <AqiBadge AirQuality="_data.AirQuality" />
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <ActivityList Activities="_data.Recommendations" />
+        </div>
+        <div class="col-md-6">
+            <ForecastChart Forecast="_data.Forecast" />
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int LocationId { get; set; }
+
+    private DashboardResponse? _data;
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _error = null;
+        _data = null;
+
+        try
+        {
+            _data = await Api.GetDashboardAsync(LocationId);
+            if (_data is null) _error = "Location not found.";
+        }
+        catch
+        {
+            _error = "Failed to load dashboard. Please try again.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

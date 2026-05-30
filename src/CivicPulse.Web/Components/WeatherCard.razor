@@ -1,0 +1,39 @@
+<div class="card h-100">
+    <div class="card-body">
+        <h5 class="card-title">Current Weather</h5>
+        <div class="weather-main mb-2">
+            <span class="temp-display">@Weather.TemperatureCelsius.ToString("F0")°C</span>
+            <span class="text-muted">@Weather.WeatherDescription</span>
+        </div>
+        <div class="row g-2">
+            <div class="col-6">
+                <small class="text-muted d-block">Feels like</small>
+                <strong>@Weather.FeelsLikeCelsius.ToString("F0")°C</strong>
+            </div>
+            <div class="col-6">
+                <small class="text-muted d-block">Humidity</small>
+                <strong>@Weather.RelativeHumidity%</strong>
+            </div>
+            <div class="col-6">
+                <small class="text-muted d-block">Wind</small>
+                <strong>@Weather.WindSpeedKmh.ToString("F0") km/h</strong>
+            </div>
+            <div class="col-6">
+                <small class="text-muted d-block">UV Index</small>
+                <strong>@Weather.UvIndex.ToString("F1")</strong>
+            </div>
+            <div class="col-6">
+                <small class="text-muted d-block">Precipitation</small>
+                <strong>@Weather.PrecipitationMm.ToString("F1") mm</strong>
+            </div>
+            <div class="col-6">
+                <small class="text-muted d-block">Precip. chance</small>
+                <strong>@Weather.PrecipitationProbability.ToString("F0")%</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public WeatherData Weather { get; set; } = default!;
+}

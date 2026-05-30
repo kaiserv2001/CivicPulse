@@ -1,0 +1,15 @@
+<div class="mb-1">
+    <div class="d-flex justify-content-between">
+        <small class="text-muted">@Label</small>
+        <small class="text-muted">@Value</small>
+    </div>
+    <div class="progress" style="height:6px">
+        <div class="progress-bar @CssClass" style="width:@Value%"></div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter, EditorRequired] public int Value { get; set; }
+    [Parameter] public string CssClass { get; set; } = "bg-primary";
+}

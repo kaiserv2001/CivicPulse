@@ -1,0 +1,90 @@
+@page "/compare"
+@inject ApiClient Api
+
+<PageTitle>Compare Cities — CivicPulse</PageTitle>
+<h1>Compare Cities</h1>
+
+@if (_compareResult is not null)
+{
+    <div class="alert @WinnerAlertClass winner-banner mb-4">
+        <strong>&#127942; Winner: @_compareResult.Winner</strong> — @_compareResult.WinnerReason
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <h5 class="text-muted mb-2">City A</h5>
+        <CitySearchBox OnLocationSelected="id => SelectCityAsync(0, id)" />
+        @if (_loadingA)
+        {
+            <div class="mt-3"><div class="skeleton skeleton-card"></div></div>
+        }
+        else if (_dataA is not null)
+        {
+            <div class="mt-3">
+                <h4>@_dataA.LocationName <small class="text-muted fs-6">@_dataA.Country</small></h4>
+                <div class="row g-2 mt-1">
+                    <div class="col-12"><ScoreGauge Score="_dataA.Score" /></div>
+                    <div class="col-12"><WeatherCard Weather="_dataA.CurrentWeather" /></div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-md-6">
+        <h5 class="text-muted mb-2">City B</h5>
+        <CitySearchBox OnLocationSelected="id => SelectCityAsync(1, id)" />
+        @if (_loadingB)
+        {
+            <div class="mt-3"><div class="skeleton skeleton-card"></div></div>
+        }
+        else if (_dataB is not null)
+        {
+            <div class="mt-3">
+                <h4>@_dataB.LocationName <small class="text-muted fs-6">@_dataB.Country</small></h4>
+                <div class="row g-2 mt-1">
+                    <div class="col-12"><ScoreGauge Score="_dataB.Score" /></div>
+                    <div class="col-12"><WeatherCard Weather="_dataB.CurrentWeather" /></div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private int _locAId, _locBId;
+    private DashboardResponse? _dataA, _dataB;
+    private CompareResponse? _compareResult;
+    private bool _loadingA, _loadingB;
+
+    private string WinnerAlertClass =>
+        _compareResult?.Winner == _compareResult?.LocationA.LocationName
+            ? "alert-primary" : "alert-success";
+
+    private async Task SelectCityAsync(int slot, int locationId)
+    {
+        _compareResult = null;
+
+        if (slot == 0)
+        {
+            _locAId = locationId;
+            _dataA = null;
+            _loadingA = true;
+            StateHasChanged();
+            _dataA = await Api.GetDashboardAsync(locationId);
+            _loadingA = false;
+        }
+        else
+        {
+            _locBId = locationId;
+            _dataB = null;
+            _loadingB = true;
+            StateHasChanged();
+            _dataB = await Api.GetDashboardAsync(locationId);
+            _loadingB = false;
+        }
+
+        if (_locAId > 0 && _locBId > 0)
+            _compareResult = await Api.CompareAsync(_locAId, _locBId);
+    }
+}

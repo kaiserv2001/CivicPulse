@@ -1,0 +1,54 @@
+@inject AuthState Auth
+@inject NavigationManager Nav
+@implements IDisposable
+
+<header class="navbar navbar-expand-lg navbar-dark bg-dark px-3 mb-0">
+    <a class="navbar-brand fw-bold" href="/">&#127780; CivicPulse</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navContent">
+        <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+                <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Search</NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link" href="/compare">Compare</NavLink>
+            </li>
+            @if (Auth.IsAuthenticated)
+            {
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/favorites">Favorites</NavLink>
+                </li>
+            }
+        </ul>
+        <ul class="navbar-nav">
+            @if (Auth.IsAuthenticated)
+            {
+                <li class="nav-item align-self-center">
+                    <span class="navbar-text text-light me-2">@Auth.Email</span>
+                </li>
+                <li class="nav-item">
+                    <button class="btn btn-sm btn-outline-light" @onclick="Logout">Sign out</button>
+                </li>
+            }
+            else
+            {
+                <li class="nav-item">
+                    <a class="btn btn-sm btn-outline-light" href="/login">Sign in</a>
+                </li>
+            }
+        </ul>
+    </div>
+</header>
+
+@code {
+    protected override void OnInitialized() => Auth.OnChange += StateHasChanged;
+    public void Dispose() => Auth.OnChange -= StateHasChanged;
+
+    private void Logout()
+    {
+        Auth.Clear();
+        Nav.NavigateTo("/");
+    }
+}

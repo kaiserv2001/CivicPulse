@@ -1,0 +1,29 @@
+<div class="card h-100">
+    <div class="card-body d-flex flex-column align-items-center justify-content-center">
+        <h5 class="card-title align-self-start">Outdoor Score</h5>
+        <div class="score-circle @GradeClass mb-3">
+            <span class="score-number">@Score.Total</span>
+            <span class="score-grade">Grade @Score.Grade</span>
+        </div>
+        <p class="text-center text-muted small mb-3">@Score.Summary</p>
+        <div class="score-breakdown w-100">
+            <ScoreBar Label="Weather" Value="@Score.WeatherScore" CssClass="bg-primary" />
+            <ScoreBar Label="Air Quality" Value="@Score.AirQualityScore" CssClass="bg-info" />
+            <ScoreBar Label="Wind" Value="@Score.WindScore" CssClass="bg-success" />
+            <ScoreBar Label="UV" Value="@Score.UvScore" CssClass="bg-warning" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public OutdoorScore Score { get; set; } = default!;
+
+    private string GradeClass => Score.Grade switch
+    {
+        "A" => "grade-a",
+        "B" => "grade-b",
+        "C" => "grade-c",
+        "D" => "grade-d",
+        _   => "grade-f"
+    };
+}

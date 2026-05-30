@@ -61,7 +61,7 @@ public class FavoritesController : ControllerBase
         }
 
         if (await _repo.FavoriteExistsAsync(userId, location.Id, ct))
-            return Conflict(new { error = "Already in favorites." });
+            return Conflict(new { error = "Already in favorites.", LocationId = location.Id });
 
         var favorite = await _repo.AddFavoriteAsync(new FavoriteLocation
         {
@@ -70,7 +70,8 @@ public class FavoritesController : ControllerBase
             Alias = request.Alias
         }, ct);
 
-        return CreatedAtAction(nameof(GetFavorites), new { id = favorite.Id }, new { favorite.Id, location.Name });
+        return CreatedAtAction(nameof(GetFavorites), new { id = favorite.Id },
+            new { favorite.Id, LocationId = location.Id, location.Name });
     }
 
     /// <summary>Remove a location from the authenticated user's favorites.</summary>
