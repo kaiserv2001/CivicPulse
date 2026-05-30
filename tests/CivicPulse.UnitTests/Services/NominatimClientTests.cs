@@ -18,7 +18,7 @@ public class NominatimClientTests
           {
             "lat": "47.6062",
             "lon": "-122.3321",
-            "displayName": "Seattle, King County, Washington, United States",
+            "display_name": "Seattle, King County, Washington, United States",
             "type": "city",
             "address": {
               "city": "Seattle",
