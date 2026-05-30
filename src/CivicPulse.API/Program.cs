@@ -127,6 +127,14 @@ try
 
     var app = builder.Build();
 
+    // Apply EF migrations automatically when using SQL Server
+    if (!useInMemory)
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.MigrateAsync();
+    }
+
     app.UseSerilogRequestLogging(opts =>
     {
         opts.GetLevel = (ctx, _, ex) => ex != null || ctx.Response.StatusCode >= 500
