@@ -1,3 +1,4 @@
+using System.Text;
 using CivicPulse.Core.Interfaces;
 using CivicPulse.Core.Services;
 using CivicPulse.Infrastructure.BackgroundJobs;
@@ -6,7 +7,10 @@ using CivicPulse.Infrastructure.ExternalClients;
 using CivicPulse.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
 
@@ -66,12 +70,48 @@ try
     builder.Services.AddFluentValidationAutoValidation();
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
+    // JWT authentication
+    var jwtKey = builder.Configuration["Jwt:Key"]!;
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+                ValidateIssuer = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidateAudience = true,
+                ValidAudience = builder.Configuration["Jwt:Audience"],
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+        });
+
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
     {
         c.SwaggerDoc("v1", new() { Title = "CivicPulse API", Version = "v1" });
         c.EnableAnnotations();
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header
+        });
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                },
+                []
+            }
+        });
     });
 
     builder.Services.AddCors(options =>
@@ -97,6 +137,7 @@ try
 
     app.UseHttpsRedirection();
     app.UseCors();
+    app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
 

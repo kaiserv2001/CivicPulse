@@ -17,12 +17,14 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="Moq" Version="4.20.70" />
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CivicPulse.API\CivicPulse.API.csproj" />
     <ProjectReference Include="..\..\src\CivicPulse.Core\CivicPulse.Core.csproj" />
+    <ProjectReference Include="..\..\src\CivicPulse.Infrastructure\CivicPulse.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
