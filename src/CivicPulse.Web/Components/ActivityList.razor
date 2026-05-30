@@ -1,0 +1,22 @@
+<div class="card h-100">
+    <div class="card-body">
+        <h5 class="card-title">Activity Suitability</h5>
+        <ul class="list-unstyled mb-0">
+            @foreach (var a in Activities)
+            {
+                <li class="activity-item @(a.Suitable ? "" : "unsuitable")">
+                    <span class="activity-icon">@a.Icon</span>
+                    <span class="activity-name fw-semibold">@a.Activity</span>
+                    <span class="badge ms-auto @(a.Suitable ? "bg-success" : "bg-secondary")">
+                        @(a.Suitable ? "Good" : "Skip")
+                    </span>
+                    <small class="activity-reason">@a.Reason</small>
+                </li>
+            }
+        </ul>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<ActivityRecommendation> Activities { get; set; } = [];
+}

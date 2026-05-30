@@ -1,0 +1,34 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="card h-100">
+    <div class="card-body">
+        <h5 class="card-title">7-Day Forecast</h5>
+        <canvas id="@_canvasId" height="120"></canvas>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<WeatherForecastDay> Forecast { get; set; } = [];
+
+    private readonly string _canvasId = $"forecast-{Guid.NewGuid():N}";
+    private IReadOnlyList<WeatherForecastDay>? _rendered;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Forecast.Count > 0 && !ReferenceEquals(Forecast, _rendered))
+        {
+            _rendered = Forecast;
+            var labels  = Forecast.Select(d => d.Date.ToString("MMM d")).ToArray();
+            var precip  = Forecast.Select(d => d.PrecipitationMm).ToArray();
+            var maxTemp = Forecast.Select(d => d.MaxTemperatureCelsius).ToArray();
+            await JS.InvokeVoidAsync("chartInterop.createForecastChart", _canvasId, labels, precip, maxTemp);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("chartInterop.destroyChart", _canvasId); }
+        catch { /* JS may be unavailable during disposal */ }
+    }
+}

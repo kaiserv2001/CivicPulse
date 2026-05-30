@@ -1,0 +1,18 @@
+@page "/"
+@inject AuthState Auth
+
+<PageTitle>CivicPulse — Find Your Ideal Outdoors</PageTitle>
+
+<div class="hero text-center py-5">
+    <h1 class="display-5 fw-bold mb-2">Find Your Ideal Outdoors</h1>
+    <p class="lead text-muted mb-4">Real-time weather, air quality, and outdoor activity scores for any city.</p>
+    <div class="search-container mx-auto" style="max-width:560px">
+        <CitySearchBox />
+    </div>
+    @if (!Auth.IsAuthenticated)
+    {
+        <p class="text-muted mt-3">
+            <small><a href="/login">Sign in</a> to save favorites and compare cities.</small>
+        </p>
+    }
+</div>

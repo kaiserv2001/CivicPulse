@@ -1,0 +1,107 @@
+@inject ApiClient Api
+@inject AuthState Auth
+@inject NavigationManager Nav
+
+<div class="city-search-box">
+    <div class="input-wrapper">
+        <input type="text"
+               class="form-control form-control-lg"
+               placeholder="Search for a city..."
+               value="@_query"
+               @oninput="OnInputChanged" />
+        @if (_loading)
+        {
+            <span class="spinner-border spinner-border-sm input-spinner text-secondary"></span>
+        }
+    </div>
+
+    @if (_error is not null)
+    {
+        <div class="alert alert-danger py-2 mt-1 mb-0">Search failed. Please try again.</div>
+    }
+
+    @if (_results.Count > 0 && !_loading)
+    {
+        <div class="search-dropdown list-group mt-1">
+            @foreach (var result in _results)
+            {
+                <button type="button"
+                        class="list-group-item list-group-item-action"
+                        @onclick="() => SelectResultAsync(result)">
+                    @result.DisplayName
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<int> OnLocationSelected { get; set; }
+
+    private string _query = "";
+    private List<LocationSearchResult> _results = [];
+    private bool _loading = false;
+    private string? _error = null;
+    private CancellationTokenSource _cts = new();
+
+    private async Task OnInputChanged(ChangeEventArgs e)
+    {
+        _query = e.Value?.ToString() ?? "";
+        _error = null;
+        _results = [];
+
+        _cts.Cancel();
+        _cts.Dispose();
+        _cts = new CancellationTokenSource();
+
+        if (_query.Length < 2) return;
+
+        try
+        {
+            await Task.Delay(400, _cts.Token);
+            _loading = true;
+            StateHasChanged();
+
+            var results = await Api.SearchLocationsAsync(_query, _cts.Token);
+            _results = results ?? [];
+        }
+        catch (OperationCanceledException) { }
+        catch
+        {
+            _error = "failed";
+            _results = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SelectResultAsync(LocationSearchResult result)
+    {
+        _results = [];
+        _query = result.DisplayName;
+
+        if (!Auth.IsAuthenticated)
+        {
+            Nav.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(Nav.Uri)}");
+            return;
+        }
+
+        var (locationId, error) = await Api.AddFavoriteAsync(result);
+
+        if (error == "unauthorized")
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        if (locationId > 0)
+        {
+            if (OnLocationSelected.HasDelegate)
+                await OnLocationSelected.InvokeAsync(locationId);
+            else
+                Nav.NavigateTo($"/dashboard/{locationId}");
+        }
+    }
+}

@@ -1,0 +1,86 @@
+@page "/login"
+@inject ApiClient Api
+@inject AuthState Auth
+@inject NavigationManager Nav
+
+<PageTitle>@(_isRegister ? "Register" : "Sign In") — CivicPulse</PageTitle>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h4 class="card-title mb-4">@(_isRegister ? "Create Account" : "Sign In")</h4>
+
+                @if (_error is not null)
+                {
+                    <div class="alert alert-danger py-2">@_error</div>
+                }
+
+                <EditForm Model="_form" OnValidSubmit="SubmitAsync">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <InputText @bind-Value="_form.Email" class="form-control" type="email" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <InputText @bind-Value="_form.Password" class="form-control" type="password" />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
+                        @if (_loading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        @(_isRegister ? "Register" : "Sign In")
+                    </button>
+                </EditForm>
+
+                <div class="text-center mt-3">
+                    <small>
+                        @(_isRegister ? "Already have an account?" : "No account yet?")
+                        <button class="btn btn-link btn-sm p-0" @onclick="() => { _isRegister = !_isRegister; _error = null; }">
+                            @(_isRegister ? "Sign In" : "Register")
+                        </button>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
+    private readonly LoginForm _form = new();
+    private bool _isRegister = false;
+    private bool _loading = false;
+    private string? _error = null;
+
+    private async Task SubmitAsync()
+    {
+        _error = null;
+        _loading = true;
+
+        var (success, token, error) = _isRegister
+            ? await Api.RegisterAsync(_form.Email, _form.Password)
+            : await Api.LoginAsync(_form.Email, _form.Password);
+
+        _loading = false;
+
+        if (success && token is not null)
+        {
+            Auth.SetToken(token, _form.Email);
+            Nav.NavigateTo(ReturnUrl ?? "/");
+        }
+        else
+        {
+            _error = error ?? "Authentication failed.";
+        }
+    }
+
+    private sealed class LoginForm
+    {
+        public string Email    { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+}

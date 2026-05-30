@@ -1,0 +1,74 @@
+@page "/favorites"
+@inject ApiClient Api
+@inject AuthState Auth
+
+<PageTitle>My Favorites — CivicPulse</PageTitle>
+<h1>My Favorites</h1>
+
+@if (!Auth.IsAuthenticated)
+{
+    <div class="alert alert-info">
+        Please <a href="/login">sign in</a> to view your saved locations.
+    </div>
+}
+else if (_loading)
+{
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else if (_favorites.Count == 0)
+{
+    <div class="text-center py-5">
+        <p class="text-muted fs-5">No favorites yet. Search for a city to add one.</p>
+        <a href="/" class="btn btn-primary">Search Cities</a>
+    </div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var fav in _favorites)
+        {
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@(fav.Alias ?? fav.Location.Name)</strong>
+                    <span class="text-muted ms-2">@fav.Location.Country</span>
+                    <small class="d-block text-muted">Saved @fav.SavedAt.ToLocalTime().ToString("d")</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/dashboard/@fav.Location.Id" class="btn btn-sm btn-outline-primary">
+                        Go to dashboard
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger"
+                            @onclick="() => RemoveFavoriteAsync(fav.Id)">
+                        Remove
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<FavoriteItem> _favorites = [];
+    private bool _loading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsAuthenticated) return;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _favorites = await Api.GetFavoritesAsync() ?? [];
+        _loading = false;
+    }
+
+    private async Task RemoveFavoriteAsync(int id)
+    {
+        if (await Api.DeleteFavoriteAsync(id))
+            _favorites.RemoveAll(f => f.Id == id);
+    }
+}
