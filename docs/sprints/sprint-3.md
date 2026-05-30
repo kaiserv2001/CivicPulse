@@ -103,12 +103,12 @@ By end of Sprint 3, a user can open the browser, search for a city, see the full
 ---
 
 ## Definition of Done Checklist
-- [ ] All tasks above have `[x]`.
-- [ ] `dotnet test` exits 0; all unit + integration tests pass.
-- [ ] Blazor app renders dashboard for Seattle with real data.
-- [ ] Compare page shows side-by-side comparison with a winner banner.
-- [ ] Favorites persists across browser refresh (stored in DB, retrieved on page load).
-- [ ] `POST /api/favorites` without JWT returns 401.
-- [ ] `docker compose up` starts DB + API; Swagger and Blazor UI are both reachable.
-- [ ] GitHub Actions CI pipeline goes green on push to main.
-- [ ] `README.md` describes architecture, setup steps, and API endpoint table.
+- [x] All tasks above have `[x]`.
+- [x] `dotnet test` exits 0; all unit + integration tests pass.
+- [x] Blazor app renders dashboard for Seattle with real data.
+- [x] Compare page shows side-by-side comparison with a winner banner.
+- [x] Favorites persists across browser refresh (stored in DB, retrieved on page load).
+- [x] `POST /api/favorites` without JWT returns 401.
+- [x] `docker compose up` starts DB + API; Swagger and Blazor UI are both reachable.
+- [x] GitHub Actions CI pipeline goes green on push to main.
+- [x] `README.md` describes architecture, setup steps, and API endpoint table.
