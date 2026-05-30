@@ -25,6 +25,7 @@ services:
       - "5000:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      USE_INMEMORY: "0"
       ConnectionStrings__DefaultConnection: "Server=db,1433;Database=CivicPulse;User Id=sa;Password=CivicPulse_Dev123!;TrustServerCertificate=True"
     depends_on:
       db:
