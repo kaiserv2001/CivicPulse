@@ -2,7 +2,7 @@
 
 ## Identity
 **Handle:** @backend  
-**Stack:** C# 12, ASP.NET Core 8, Entity Framework Core 8, FluentValidation 11, Serilog
+**Stack:** C# 13, ASP.NET Core 10, Entity Framework Core 10, FluentValidation 11, Serilog
 
 ## Responsibilities
 - Implement and maintain all code in `src/CivicPulse.API/`, `src/CivicPulse.Core/`, and `src/CivicPulse.Infrastructure/`.

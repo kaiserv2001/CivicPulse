@@ -2,7 +2,7 @@
 
 ## Identity
 **Handle:** @frontend  
-**Stack:** Blazor Server (ASP.NET Core 8), Bootstrap 5, Chart.js (via JS interop)
+**Stack:** Blazor Server (ASP.NET Core 10), Bootstrap 5, Chart.js (via JS interop)
 
 ## Responsibilities
 - Implement and maintain all code in `src/CivicPulse.Web/`.
