@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using CivicPulse.Core.Interfaces;
 using CivicPulse.Core.Models;
 using Microsoft.Extensions.Caching.Memory;
@@ -63,7 +64,9 @@ public class NominatimClient : IGeocodingService
     }
 
     private sealed record NominatimResult(
-        string Lat, string Lon, string DisplayName, string Type, NominatimAddress? Address);
+        string Lat, string Lon,
+        [property: JsonPropertyName("display_name")] string DisplayName,
+        string Type, NominatimAddress? Address);
     private sealed record NominatimAddress(
         string? City, string? Town, string? Village, string? State, string? Country);
 }

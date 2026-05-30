@@ -29,8 +29,17 @@ public class OpenAQClient : IAirQualityService
 
         _logger.LogInformation("Fetching air quality for {Lat},{Lon}", latitude, longitude);
 
+        OpenAQResponse? response;
         var url = $"v3/measurements?coordinates={latitude},{longitude}&radius=25000&limit=100&order_by=datetime&sort=desc";
-        var response = await _http.GetFromJsonAsync<OpenAQResponse>(url, ct);
+        try
+        {
+            response = await _http.GetFromJsonAsync<OpenAQResponse>(url, ct);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+        {
+            _logger.LogWarning("OpenAQ API requires an API key (HTTP {Status}); returning default AQ data.", ex.StatusCode);
+            return DefaultAirQuality();
+        }
 
         if (response?.Results is null || response.Results.Length == 0)
         {

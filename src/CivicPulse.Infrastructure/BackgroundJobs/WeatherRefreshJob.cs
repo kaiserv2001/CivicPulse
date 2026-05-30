@@ -27,8 +27,17 @@ public class WeatherRefreshJob : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await RefreshAllFavoritedLocationsAsync(stoppingToken);
-            await Task.Delay(Interval, stoppingToken);
+            try
+            {
+                await RefreshAllFavoritedLocationsAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "WeatherRefreshJob cycle failed; will retry next interval.");
+            }
+
+            await Task.Delay(Interval, stoppingToken).ConfigureAwait(false);
         }
     }
 
