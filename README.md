@@ -9,7 +9,7 @@ CivicPulse/
 ├── src/
 │   ├── CivicPulse.API/              # ASP.NET Core 10 Web API + Serilog + Swagger
 │   ├── CivicPulse.Core/             # Domain entities, interfaces, models, scoring service
-│   ├── CivicPulse.Infrastructure/   # EF Core, HTTP clients, repository, background job
+│   ├── CivicPulse.Infrastructure/   # EF Core, HTTP clients, Redis cache, background job
 │   └── CivicPulse.Web/              # Blazor Server frontend
 └── tests/
     ├── CivicPulse.UnitTests/        # xUnit + Moq + FluentAssertions
@@ -24,7 +24,7 @@ CivicPulse/
 | API | Purpose | Key required |
 |-----|---------|--------------|
 | [Open-Meteo](https://open-meteo.com/en/docs) | Current weather + 7-day forecast | No |
-| [OpenAQ v3](https://docs.openaq.org/) | Real-time air quality (PM2.5, PM10, NO₂, O₃) | Yes (free tier) |
+| [OpenAQ v3](https://docs.openaq.org/) | Real-time + historical air quality (PM2.5, PM10, NO₂, O₃) | Yes (free tier) |
 | [Nominatim / OSM](https://nominatim.openstreetmap.org/search) | City geocoding (1 req/s, cached 24 h) | No |
 
 > **Note:** If no OpenAQ key is configured the dashboard loads with AQI defaulting to "Unknown" — all other features remain fully functional.
@@ -35,12 +35,16 @@ CivicPulse/
 |--------|-------|------|-------------|
 | GET | `/api/locations/search?query=` | — | Search city by name |
 | GET | `/api/dashboard/{locationId}` | — | Weather + AQ + score + 7-day forecast |
+| GET | `/api/dashboard/{locationId}/aqtrend` | — | 7-day daily AQI history |
 | GET | `/api/dashboard/compare?loc1=&loc2=` | — | Side-by-side city comparison |
 | GET | `/api/favorites` | JWT | List saved favorites |
 | POST | `/api/favorites` | JWT | Save a location |
 | DELETE | `/api/favorites/{id}` | JWT | Remove a favorite |
 | POST | `/api/auth/register` | — | Create account → returns JWT |
 | POST | `/api/auth/login` | — | Authenticate → returns JWT |
+| GET | `/api/profile` | JWT | Get email and account creation date |
+| PUT | `/api/profile/email` | JWT | Update email |
+| PUT | `/api/profile/password` | JWT | Change password |
 
 Swagger UI available at `/swagger` when running locally.
 
@@ -62,13 +66,13 @@ Grades: **A** (≥85) · **B** (≥70) · **C** (≥55) · **D** (≥40) · **F*
 ### Prerequisites
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 
-### 1. Run the API (in-memory database)
+### 1. Run the API (in-memory database + in-memory cache)
 
 ```bash
 dotnet run --project src/CivicPulse.API --urls http://localhost:5000
 ```
 
-The `"USE_INMEMORY": "1"` key in `appsettings.json` bypasses SQL Server entirely.  
+The `"USE_INMEMORY": "1"` key in `appsettings.json` bypasses SQL Server and Redis entirely.  
 Swagger UI: http://localhost:5000/swagger
 
 ### 2. Run the Blazor frontend
@@ -91,25 +95,36 @@ dotnet test
 
 ---
 
-### With SQL Server (optional)
-
-If you have Docker:
+### With Docker (SQL Server + Redis)
 
 ```bash
-docker compose up db
-dotnet ef database update \
-  --project src/CivicPulse.Infrastructure \
-  --startup-project src/CivicPulse.API
+docker compose up --build
 ```
 
-Then remove `"USE_INMEMORY": "1"` from `appsettings.json` before running.
+- API + Swagger: http://localhost:5000/swagger
+- Blazor UI: http://localhost:5001
+- Redis: `localhost:6379`
+
+EF migrations run automatically on startup. Cache entries survive container restarts via the named `redisdata` volume.
+
+## TypeScript Client
+
+A typed TypeScript client can be generated from the live Swagger spec. Requires Node.js ≥ 18 and the API running at `localhost:5000`.
+
+```bash
+bash scripts/gen-ts-client.sh
+```
+
+This runs `openapi-typescript` and writes type definitions to `clients/typescript/api.d.ts`. The `clients/typescript/` directory is git-ignored (generated artefact).
 
 ## Stack
 
 - ASP.NET Core 10 Web API
 - Entity Framework Core 10 + SQL Server 2022 (or in-memory for dev)
+- Redis 7 (`IDistributedCache`) for shared, persistent caching
 - Blazor Server with Chart.js interop
 - JWT authentication (HS256, 24-hour expiry)
+- Rate limiting: 60 req/min per IP (ASP.NET Core built-in)
 - Serilog (structured logging, rolling file + console)
 - FluentValidation 11
 - xUnit + Moq + FluentAssertions

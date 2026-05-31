@@ -94,6 +94,9 @@ public class ApiClient(HttpClient http, AuthState auth)
         return (false, null, "Registration failed.");
     }
 
+    public Task<IReadOnlyList<AqTrendDay>?> GetAqTrendAsync(int locationId, CancellationToken ct = default) =>
+        http.GetFromJsonAsync<IReadOnlyList<AqTrendDay>>($"api/dashboard/{locationId}/aqtrend", ct);
+
     public async Task<ProfileInfo?> GetProfileAsync(CancellationToken ct = default)
     {
         ApplyAuth();

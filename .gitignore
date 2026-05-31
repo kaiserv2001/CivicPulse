@@ -37,3 +37,6 @@ coverage/
 *.nupkg
 .nuget/
 packages/
+
+## Generated artefacts
+clients/typescript/

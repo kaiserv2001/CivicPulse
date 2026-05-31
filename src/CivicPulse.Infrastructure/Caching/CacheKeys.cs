@@ -7,4 +7,5 @@ public static class CacheKeys
     public static string AirQuality(double lat, double lon) => $"aq_{lat:F3}_{lon:F3}";
     public static string Geocode(string query) => $"geocode_{query.ToLowerInvariant().Trim()}";
     public static string Dashboard(int locationId) => $"dashboard_{locationId}";
+    public static string AqTrend(double lat, double lon) => $"aqtrend_{lat:F3}_{lon:F3}";
 }

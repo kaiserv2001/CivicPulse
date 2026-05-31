@@ -2,8 +2,10 @@ using System.Net;
 using System.Text;
 using CivicPulse.Infrastructure.ExternalClients;
 using FluentAssertions;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using Xunit;
@@ -44,11 +46,14 @@ public class NominatimClientTests
         return mock;
     }
 
-    private static NominatimClient BuildClient(Mock<HttpMessageHandler> handler, IMemoryCache? cache = null)
+    private static IDistributedCache NewCache() =>
+        new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions()));
+
+    private static NominatimClient BuildClient(Mock<HttpMessageHandler> handler, IDistributedCache? cache = null)
     {
         var http = new HttpClient(handler.Object) { BaseAddress = new Uri("https://nominatim.openstreetmap.org/") };
         http.DefaultRequestHeaders.Add("User-Agent", "CivicPulse/1.0 (test)");
-        return new NominatimClient(http, cache ?? new MemoryCache(new MemoryCacheOptions()), Mock.Of<ILogger<NominatimClient>>());
+        return new NominatimClient(http, cache ?? NewCache(), Mock.Of<ILogger<NominatimClient>>());
     }
 
     [Fact]
@@ -71,7 +76,7 @@ public class NominatimClientTests
     public async Task SearchAsync_CalledTwiceWithSameQuery_SecondCallServedFromCache()
     {
         var handler = SetupHandler(SearchJson);
-        var sut = BuildClient(handler, new MemoryCache(new MemoryCacheOptions()));
+        var sut = BuildClient(handler, NewCache());
 
         await sut.SearchAsync("Seattle");
         await sut.SearchAsync("Seattle");

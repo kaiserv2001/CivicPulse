@@ -2,8 +2,10 @@ using System.Net;
 using System.Text;
 using CivicPulse.Infrastructure.ExternalClients;
 using FluentAssertions;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using Xunit;
@@ -44,10 +46,13 @@ public class OpenMeteoClientTests
         return mock;
     }
 
-    private static OpenMeteoClient BuildClient(Mock<HttpMessageHandler> handler, IMemoryCache? cache = null)
+    private static IDistributedCache NewCache() =>
+        new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions()));
+
+    private static OpenMeteoClient BuildClient(Mock<HttpMessageHandler> handler, IDistributedCache? cache = null)
     {
         var http = new HttpClient(handler.Object) { BaseAddress = new Uri("https://api.open-meteo.com/") };
-        return new OpenMeteoClient(http, cache ?? new MemoryCache(new MemoryCacheOptions()), Mock.Of<ILogger<OpenMeteoClient>>());
+        return new OpenMeteoClient(http, cache ?? NewCache(), Mock.Of<ILogger<OpenMeteoClient>>());
     }
 
     [Fact]
@@ -74,7 +79,7 @@ public class OpenMeteoClientTests
     public async Task GetCurrentWeatherAsync_CalledTwice_SecondCallHitsCacheNotHttp()
     {
         var handler = SetupHandler(CurrentWeatherJson);
-        var sut = BuildClient(handler, new MemoryCache(new MemoryCacheOptions()));
+        var sut = BuildClient(handler, NewCache());
 
         await sut.GetCurrentWeatherAsync(47.6062, -122.3321);
         await sut.GetCurrentWeatherAsync(47.6062, -122.3321);
