@@ -1,5 +1,6 @@
 @page "/"
 @inject AuthState Auth
+@implements IDisposable
 
 <PageTitle>CivicPulse — Find Your Ideal Outdoors</PageTitle>
 
@@ -12,7 +13,12 @@
     @if (!Auth.IsAuthenticated)
     {
         <p class="text-muted mt-3">
-            <small><a href="/login">Sign in</a> to save favorites and compare cities.</small>
+            <small><a href="/login?register=true">Register</a> or <a href="/login">sign in</a> to save favorites and compare cities.</small>
         </p>
     }
 </div>
+
+@code {
+    protected override void OnInitialized() => Auth.OnChange += StateHasChanged;
+    public void Dispose() => Auth.OnChange -= StateHasChanged;
+}

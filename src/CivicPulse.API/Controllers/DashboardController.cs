@@ -73,10 +73,9 @@ public class DashboardController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Compare([FromQuery] int loc1, [FromQuery] int loc2, CancellationToken ct)
     {
-        var (locationA, locationB) = await (
-            _repo.GetByIdAsync(loc1, ct),
-            _repo.GetByIdAsync(loc2, ct)
-        ).WhenBoth();
+        // Sequential — EF Core DbContext is not thread-safe; cannot run two queries concurrently
+        var locationA = await _repo.GetByIdAsync(loc1, ct);
+        var locationB = await _repo.GetByIdAsync(loc2, ct);
 
         if (locationA is null) return NotFound(new { error = $"Location {loc1} not found." });
         if (locationB is null) return NotFound(new { error = $"Location {loc2} not found." });
