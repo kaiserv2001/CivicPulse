@@ -83,6 +83,46 @@ window.chartInterop = {
         });
     },
 
+    createAqiTrendChart: function (canvasId, labels, values) {
+        if (this._charts[canvasId]) {
+            this._charts[canvasId].destroy();
+            delete this._charts[canvasId];
+        }
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        const aqiColor = v => v <= 50 ? 'rgba(34,197,94,0.9)'
+            : v <= 100 ? 'rgba(234,179,8,0.9)'
+            : v <= 150 ? 'rgba(249,115,22,0.9)'
+            : 'rgba(239,68,68,0.9)';
+
+        this._charts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'AQI',
+                    data: values,
+                    borderColor: 'rgba(99,102,241,0.8)',
+                    backgroundColor: 'rgba(99,102,241,0.08)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: values.map(aqiColor),
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    segment: { borderColor: c => aqiColor(c.p1.parsed.y) }
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'AQI' } }
+                }
+            }
+        });
+    },
+
     destroyChart: function (canvasId) {
         if (this._charts[canvasId]) {
             this._charts[canvasId].destroy();

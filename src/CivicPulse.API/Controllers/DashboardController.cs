@@ -2,7 +2,7 @@ using CivicPulse.Core.Interfaces;
 using CivicPulse.Core.Models;
 using CivicPulse.Infrastructure.Caching;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace CivicPulse.API.Controllers;
 
@@ -15,14 +15,14 @@ public class DashboardController : ControllerBase
     private readonly IWeatherService _weather;
     private readonly IAirQualityService _airQuality;
     private readonly IOutdoorScoringService _scoring;
-    private readonly IMemoryCache _cache;
+    private readonly IDistributedCache _cache;
 
     public DashboardController(
         ILocationRepository repo,
         IWeatherService weather,
         IAirQualityService airQuality,
         IOutdoorScoringService scoring,
-        IMemoryCache cache)
+        IDistributedCache cache)
     {
         _repo = repo;
         _weather = weather;
@@ -38,8 +38,8 @@ public class DashboardController : ControllerBase
     public async Task<IActionResult> GetDashboard(int locationId, CancellationToken ct)
     {
         var cacheKey = CacheKeys.Dashboard(locationId);
-        if (_cache.TryGetValue(cacheKey, out DashboardResponse? cached) && cached is not null)
-            return Ok(cached);
+        var cached = await _cache.GetJsonAsync<DashboardResponse>(cacheKey, ct);
+        if (cached is not null) return Ok(cached);
 
         var location = await _repo.GetByIdAsync(locationId, ct);
         if (location is null)
@@ -63,7 +63,7 @@ public class DashboardController : ControllerBase
             GeneratedAt: DateTime.UtcNow
         );
 
-        _cache.Set(cacheKey, response, TimeSpan.FromMinutes(15));
+        await _cache.SetJsonAsync(cacheKey, response, TimeSpan.FromMinutes(15), ct);
         return Ok(response);
     }
 
@@ -104,11 +104,25 @@ public class DashboardController : ControllerBase
         return Ok(new CompareResponse(dashA, dashB, winner, reason));
     }
 
+    /// <summary>7-day AQI trend for a saved location (daily PM2.5-derived AQI).</summary>
+    [HttpGet("{locationId:int}/aqtrend")]
+    [ProducesResponseType(typeof(IReadOnlyList<AqTrendDay>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAqTrend(int locationId, CancellationToken ct)
+    {
+        var location = await _repo.GetByIdAsync(locationId, ct);
+        if (location is null)
+            return NotFound(new { error = $"Location {locationId} not found." });
+
+        var trend = await _airQuality.GetAqTrendAsync(location.Latitude, location.Longitude, ct);
+        return Ok(trend);
+    }
+
     private async Task<(WeatherData, AirQualityData, IReadOnlyList<WeatherForecastDay>)> FetchParallelAsync(
         double lat, double lon, CancellationToken ct)
     {
-        var weatherTask = _weather.GetCurrentWeatherAsync(lat, lon, ct);
-        var aqTask = _airQuality.GetCurrentAirQualityAsync(lat, lon, ct);
+        var weatherTask  = _weather.GetCurrentWeatherAsync(lat, lon, ct);
+        var aqTask       = _airQuality.GetCurrentAirQualityAsync(lat, lon, ct);
         var forecastTask = _weather.GetForecastAsync(lat, lon, 7, ct);
 
         await Task.WhenAll(weatherTask, aqTask, forecastTask);
@@ -116,7 +130,6 @@ public class DashboardController : ControllerBase
     }
 }
 
-// Local extension to avoid a messy WhenAll pattern on two different Task<T> types
 internal static class TaskExtensions
 {
     public static async Task<(T1, T2)> WhenBoth<T1, T2>(this (Task<T1>, Task<T2>) tasks)

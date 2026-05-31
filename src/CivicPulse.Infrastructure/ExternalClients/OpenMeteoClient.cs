@@ -1,7 +1,8 @@
 using System.Net.Http.Json;
 using CivicPulse.Core.Interfaces;
 using CivicPulse.Core.Models;
-using Microsoft.Extensions.Caching.Memory;
+using CivicPulse.Infrastructure.Caching;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 
 namespace CivicPulse.Infrastructure.ExternalClients;
@@ -10,7 +11,7 @@ namespace CivicPulse.Infrastructure.ExternalClients;
 public class OpenMeteoClient : IWeatherService
 {
     private readonly HttpClient _http;
-    private readonly IMemoryCache _cache;
+    private readonly IDistributedCache _cache;
     private readonly ILogger<OpenMeteoClient> _logger;
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(30);
 
@@ -22,7 +23,7 @@ public class OpenMeteoClient : IWeatherService
         [95] = "Thunderstorm", [99] = "Thunderstorm with hail"
     };
 
-    public OpenMeteoClient(HttpClient http, IMemoryCache cache, ILogger<OpenMeteoClient> logger)
+    public OpenMeteoClient(HttpClient http, IDistributedCache cache, ILogger<OpenMeteoClient> logger)
     {
         _http = http;
         _cache = cache;
@@ -31,9 +32,9 @@ public class OpenMeteoClient : IWeatherService
 
     public async Task<WeatherData> GetCurrentWeatherAsync(double latitude, double longitude, CancellationToken ct = default)
     {
-        var cacheKey = $"weather_current_{latitude:F3}_{longitude:F3}";
-        if (_cache.TryGetValue(cacheKey, out WeatherData? cached) && cached is not null)
-            return cached;
+        var cacheKey = CacheKeys.CurrentWeather(latitude, longitude);
+        var cached = await _cache.GetJsonAsync<WeatherData>(cacheKey, ct);
+        if (cached is not null) return cached;
 
         var url = $"v1/forecast?latitude={latitude}&longitude={longitude}" +
                   "&current=temperature_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m," +
@@ -60,16 +61,16 @@ public class OpenMeteoClient : IWeatherService
             ObservedAt: DateTime.UtcNow
         );
 
-        _cache.Set(cacheKey, result, CacheTtl);
+        await _cache.SetJsonAsync(cacheKey, result, CacheTtl, ct);
         return result;
     }
 
     public async Task<IReadOnlyList<WeatherForecastDay>> GetForecastAsync(
         double latitude, double longitude, int days = 7, CancellationToken ct = default)
     {
-        var cacheKey = $"weather_forecast_{latitude:F3}_{longitude:F3}_{days}";
-        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<WeatherForecastDay>? cached) && cached is not null)
-            return cached;
+        var cacheKey = CacheKeys.Forecast(latitude, longitude, days);
+        var cached = await _cache.GetJsonAsync<List<WeatherForecastDay>>(cacheKey, ct);
+        if (cached is not null) return cached;
 
         var url = $"v1/forecast?latitude={latitude}&longitude={longitude}" +
                   $"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max," +
@@ -91,7 +92,7 @@ public class OpenMeteoClient : IWeatherService
             ))
             .ToList();
 
-        _cache.Set(cacheKey, (IReadOnlyList<WeatherForecastDay>)result, CacheTtl);
+        await _cache.SetJsonAsync(cacheKey, result, CacheTtl, ct);
         return result;
     }
 

@@ -1,4 +1,12 @@
 services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
+
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
@@ -25,9 +33,12 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       USE_INMEMORY: "0"
       ConnectionStrings__DefaultConnection: "Server=db,1433;Database=CivicPulse;User Id=sa;Password=CivicPulse_Dev123!;TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
 
   web:
     build:
@@ -42,3 +53,4 @@ services:
 
 volumes:
   sqldata:
+  redisdata:

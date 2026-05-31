@@ -41,8 +41,12 @@ try
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-    // Caching
-    builder.Services.AddMemoryCache();
+    // Distributed cache — Redis in Docker/production, in-memory for local dev and tests
+    if (useInMemory)
+        builder.Services.AddDistributedMemoryCache();
+    else
+        builder.Services.AddStackExchangeRedisCache(opts =>
+            opts.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379");
 
     // Core services
     builder.Services.AddScoped<ILocationRepository, LocationRepository>();

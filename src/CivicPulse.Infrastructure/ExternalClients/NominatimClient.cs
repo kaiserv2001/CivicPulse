@@ -2,7 +2,8 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using CivicPulse.Core.Interfaces;
 using CivicPulse.Core.Models;
-using Microsoft.Extensions.Caching.Memory;
+using CivicPulse.Infrastructure.Caching;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 
 namespace CivicPulse.Infrastructure.ExternalClients;
@@ -13,12 +14,12 @@ namespace CivicPulse.Infrastructure.ExternalClients;
 public class NominatimClient : IGeocodingService
 {
     private readonly HttpClient _http;
-    private readonly IMemoryCache _cache;
+    private readonly IDistributedCache _cache;
     private readonly ILogger<NominatimClient> _logger;
     private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(24);
     private static readonly SemaphoreSlim RateLimiter = new(1, 1);
 
-    public NominatimClient(HttpClient http, IMemoryCache cache, ILogger<NominatimClient> logger)
+    public NominatimClient(HttpClient http, IDistributedCache cache, ILogger<NominatimClient> logger)
     {
         _http = http;
         _cache = cache;
@@ -27,9 +28,9 @@ public class NominatimClient : IGeocodingService
 
     public async Task<IReadOnlyList<LocationSearchResult>> SearchAsync(string query, CancellationToken ct = default)
     {
-        var cacheKey = $"geocode_{query.ToLowerInvariant().Trim()}";
-        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<LocationSearchResult>? cached) && cached is not null)
-            return cached;
+        var cacheKey = CacheKeys.Geocode(query);
+        var cached = await _cache.GetJsonAsync<List<LocationSearchResult>>(cacheKey, ct);
+        if (cached is not null) return cached;
 
         // Rate-limit: enforce at most 1 req/sec as required by Nominatim policy
         await RateLimiter.WaitAsync(ct);
@@ -53,7 +54,7 @@ public class NominatimClient : IGeocodingService
                 ))
                 .ToList();
 
-            _cache.Set(cacheKey, (IReadOnlyList<LocationSearchResult>)locations, CacheTtl);
+            await _cache.SetJsonAsync(cacheKey, locations, CacheTtl, ct);
             return locations;
         }
         finally

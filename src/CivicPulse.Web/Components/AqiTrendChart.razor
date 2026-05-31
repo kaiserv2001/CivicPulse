@@ -1,0 +1,41 @@
+@using CivicPulse.Core.Models
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="card h-100">
+    <div class="card-body">
+        <h5 class="card-title">7-Day AQI Trend</h5>
+        @if (_noData)
+        {
+            <p class="text-muted mb-0"><small>No historical AQ data available near this location.</small></p>
+        }
+        else
+        {
+            <canvas id="@_canvasId" height="180"></canvas>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<AqTrendDay> Trend { get; set; } = default!;
+
+    private readonly string _canvasId = $"aqtrend-{Guid.NewGuid():N}";
+    private bool _noData;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _noData = Trend.All(d => d.Aqi == 0);
+        if (_noData) { StateHasChanged(); return; }
+
+        var labels = Trend.Select(d => d.Date.ToString("ddd dd")).ToArray();
+        var values = Trend.Select(d => d.Aqi).ToArray();
+        await JS.InvokeVoidAsync("chartInterop.createAqiTrendChart", _canvasId, labels, values);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("chartInterop.destroyChart", _canvasId); }
+        catch { /* JS runtime may be gone during circuit teardown */ }
+    }
+}
