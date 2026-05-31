@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using CivicPulse.Core.Interfaces;
 using CivicPulse.Core.Models;
 using CivicPulse.Infrastructure.Caching;
@@ -98,13 +99,23 @@ public class OpenMeteoClient : IWeatherService
 
     private sealed record OpenMeteoCurrentResponse(CurrentBlock Current);
     private sealed record CurrentBlock(
-        double Temperature2m, double ApparentTemperature,
-        double WindSpeed10m, double WindGusts10m,
-        double Precipitation, double PrecipitationProbability,
-        double UvIndex, double RelativeHumidity2m, int WeatherCode);
+        [property: JsonPropertyName("temperature_2m")]          double Temperature2m,
+        [property: JsonPropertyName("apparent_temperature")]    double ApparentTemperature,
+        [property: JsonPropertyName("wind_speed_10m")]          double WindSpeed10m,
+        [property: JsonPropertyName("wind_gusts_10m")]          double WindGusts10m,
+        [property: JsonPropertyName("precipitation")]           double Precipitation,
+        [property: JsonPropertyName("precipitation_probability")]double PrecipitationProbability,
+        [property: JsonPropertyName("uv_index")]                double UvIndex,
+        [property: JsonPropertyName("relative_humidity_2m")]    double RelativeHumidity2m,
+        [property: JsonPropertyName("weather_code")]            int WeatherCode);
     private sealed record OpenMeteoDailyResponse(DailyBlock Daily);
     private sealed record DailyBlock(
-        string[] Time, double[]? Temperature2mMax, double[]? Temperature2mMin,
-        double[]? PrecipitationSum, double[]? PrecipitationProbabilityMax,
-        double[]? WindSpeed10mMax, double[]? UvIndexMax, int[]? WeatherCode);
+        [property: JsonPropertyName("time")]                          string[] Time,
+        [property: JsonPropertyName("temperature_2m_max")]            double[]? Temperature2mMax,
+        [property: JsonPropertyName("temperature_2m_min")]            double[]? Temperature2mMin,
+        [property: JsonPropertyName("precipitation_sum")]             double[]? PrecipitationSum,
+        [property: JsonPropertyName("precipitation_probability_max")] double[]? PrecipitationProbabilityMax,
+        [property: JsonPropertyName("wind_speed_10m_max")]            double[]? WindSpeed10mMax,
+        [property: JsonPropertyName("uv_index_max")]                  double[]? UvIndexMax,
+        [property: JsonPropertyName("weather_code")]                  int[]? WeatherCode);
 }
