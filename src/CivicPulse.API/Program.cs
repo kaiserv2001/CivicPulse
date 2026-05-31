@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using CivicPulse.Core.Interfaces;
 using CivicPulse.Core.Services;
 using CivicPulse.Infrastructure.BackgroundJobs;
@@ -119,14 +120,49 @@ try
             .AllowAnyHeader()
             .AllowAnyMethod()));
 
+    // Rate limiting — 60 requests per minute per IP, returns 429 on excess
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 60,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                }));
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.OnRejected = async (ctx, token) =>
+        {
+            ctx.HttpContext.Response.Headers.RetryAfter = "60";
+            await ctx.HttpContext.Response.WriteAsync("Rate limit exceeded. Retry in 60 seconds.", token);
+        };
+    });
+
     var app = builder.Build();
 
-    // Apply EF migrations automatically when using SQL Server
+    // Apply EF migrations — retry because SQL Server may not have fully attached volume
+    // databases even after the healthcheck passes.
     if (!useInMemory)
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await db.Database.MigrateAsync();
+        for (var attempt = 1; attempt <= 10; attempt++)
+        {
+            try
+            {
+                await db.Database.MigrateAsync();
+                break;
+            }
+            catch (Exception ex) when (attempt < 10)
+            {
+                Log.Warning(ex, "Migration attempt {Attempt}/10 failed. Retrying in {Delay}s...",
+                    attempt, attempt * 2);
+                await Task.Delay(TimeSpan.FromSeconds(attempt * 2));
+            }
+        }
     }
 
     app.UseSerilogRequestLogging(opts =>
@@ -144,6 +180,7 @@ try
 
     app.UseHttpsRedirection();
     app.UseCors();
+    app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
