@@ -111,11 +111,11 @@ public class OpenMeteoClient : IWeatherService
     private sealed record OpenMeteoDailyResponse(DailyBlock Daily);
     private sealed record DailyBlock(
         [property: JsonPropertyName("time")]                          string[] Time,
-        [property: JsonPropertyName("temperature_2m_max")]            double[]? Temperature2mMax,
-        [property: JsonPropertyName("temperature_2m_min")]            double[]? Temperature2mMin,
-        [property: JsonPropertyName("precipitation_sum")]             double[]? PrecipitationSum,
-        [property: JsonPropertyName("precipitation_probability_max")] double[]? PrecipitationProbabilityMax,
-        [property: JsonPropertyName("wind_speed_10m_max")]            double[]? WindSpeed10mMax,
-        [property: JsonPropertyName("uv_index_max")]                  double[]? UvIndexMax,
-        [property: JsonPropertyName("weather_code")]                  int[]? WeatherCode);
+        [property: JsonPropertyName("temperature_2m_max")]            double?[]? Temperature2mMax,
+        [property: JsonPropertyName("temperature_2m_min")]            double?[]? Temperature2mMin,
+        [property: JsonPropertyName("precipitation_sum")]             double?[]? PrecipitationSum,
+        [property: JsonPropertyName("precipitation_probability_max")] double?[]? PrecipitationProbabilityMax,
+        [property: JsonPropertyName("wind_speed_10m_max")]            double?[]? WindSpeed10mMax,
+        [property: JsonPropertyName("uv_index_max")]                  double?[]? UvIndexMax,
+        [property: JsonPropertyName("weather_code")]                  int?[]? WeatherCode);
 }

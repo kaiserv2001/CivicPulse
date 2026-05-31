@@ -63,6 +63,9 @@ try
     {
         c.BaseAddress = new Uri("https://api.openaq.org/");
         c.Timeout = TimeSpan.FromSeconds(15);
+        var aqKey = builder.Configuration["OpenAQ:ApiKey"];
+        if (!string.IsNullOrEmpty(aqKey))
+            c.DefaultRequestHeaders.Add("X-API-Key", aqKey);
     });
 
     // Nominatim requires a descriptive User-Agent per their usage policy
