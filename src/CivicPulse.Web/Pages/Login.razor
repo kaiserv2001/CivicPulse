@@ -39,7 +39,7 @@
                 <div class="text-center mt-3">
                     <small>
                         @(_isRegister ? "Already have an account?" : "No account yet?")
-                        <button class="btn btn-link btn-sm p-0" @onclick="() => { _isRegister = !_isRegister; _error = null; }">
+                        <button type="button" class="btn btn-link btn-sm p-0" @onclick="ToggleMode">
                             @(_isRegister ? "Sign In" : "Register")
                         </button>
                     </small>
@@ -51,11 +51,14 @@
 
 @code {
     [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery] public bool Register { get; set; }
 
     private readonly LoginForm _form = new();
-    private bool _isRegister = false;
+    private bool _isRegister;
     private bool _loading = false;
     private string? _error = null;
+
+    protected override void OnInitialized() => _isRegister = Register;
 
     private async Task SubmitAsync()
     {
@@ -77,6 +80,12 @@
         {
             _error = error ?? "Authentication failed.";
         }
+    }
+
+    private void ToggleMode()
+    {
+        _isRegister = !_isRegister;
+        _error = null;
     }
 
     private sealed class LoginForm

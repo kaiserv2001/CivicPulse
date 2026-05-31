@@ -12,7 +12,7 @@ COPY src/CivicPulse.Core/ src/CivicPulse.Core/
 COPY src/CivicPulse.Web/  src/CivicPulse.Web/
 
 RUN dotnet publish src/CivicPulse.Web/CivicPulse.Web.csproj \
-    -c Release -o /app/publish --no-restore
+    -c Release -o /app/publish
 
 # Stage 2: runtime
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime

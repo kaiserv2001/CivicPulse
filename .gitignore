@@ -21,9 +21,6 @@ appsettings.Local.json
 .env.*
 secrets.json
 
-## Docker
-.dockerignore
-
 ## OS
 .DS_Store
 Thumbs.db
