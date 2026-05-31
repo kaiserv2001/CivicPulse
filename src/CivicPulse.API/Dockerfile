@@ -14,7 +14,7 @@ RUN dotnet restore
 
 COPY . .
 RUN dotnet publish src/CivicPulse.API/CivicPulse.API.csproj \
-    -c Release -o /app/publish --no-restore
+    -c Release -o /app/publish
 
 # Stage 2: runtime
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime

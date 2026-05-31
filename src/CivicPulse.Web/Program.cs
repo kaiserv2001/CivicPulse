@@ -14,11 +14,8 @@ builder.Services.AddHttpClient<ApiClient>(c =>
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
-    app.UseHsts();
-
-app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.MapStaticAssets();   // .NET 10: serves _framework/blazor.server.js via manifest
 app.UseRouting();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
