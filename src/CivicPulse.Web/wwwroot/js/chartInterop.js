@@ -1,3 +1,15 @@
+window.themeInterop = {
+    init: function () {
+        const t = localStorage.getItem('cp_theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', t);
+        return t;
+    },
+    set: function (theme) {
+        localStorage.setItem('cp_theme', theme);
+        document.documentElement.setAttribute('data-bs-theme', theme);
+    }
+};
+
 window.authStorage = {
     save: function (token, email) {
         localStorage.setItem('cp_token', token);

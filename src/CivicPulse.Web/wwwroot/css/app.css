@@ -59,3 +59,9 @@
 
 /* Cards equal height */
 .card { height: 100%; }
+
+/* Dark mode overrides for custom elements */
+[data-bs-theme="dark"] .skeleton { background: #374151; }
+[data-bs-theme="dark"] .activity-item { border-bottom-color: #374151; }
+[data-bs-theme="dark"] .aqi-number { color: #9ca3af; }
+[data-bs-theme="dark"] .search-dropdown { box-shadow: 0 4px 12px rgba(0,0,0,0.45); }

@@ -81,8 +81,11 @@ public class DashboardController : ControllerBase
         if (locationA is null) return NotFound(new { error = $"Location {loc1} not found." });
         if (locationB is null) return NotFound(new { error = $"Location {loc2} not found." });
 
-        var (weatherA, aqA, forecastA) = await FetchParallelAsync(locationA.Latitude, locationA.Longitude, ct);
-        var (weatherB, aqB, forecastB) = await FetchParallelAsync(locationB.Latitude, locationB.Longitude, ct);
+        var taskA = FetchParallelAsync(locationA.Latitude, locationA.Longitude, ct);
+        var taskB = FetchParallelAsync(locationB.Latitude, locationB.Longitude, ct);
+        await Task.WhenAll(taskA, taskB);
+        var (weatherA, aqA, forecastA) = taskA.Result;
+        var (weatherB, aqB, forecastB) = taskB.Result;
 
         var scoreA = _scoring.Calculate(weatherA, aqA);
         var scoreB = _scoring.Calculate(weatherB, aqB);

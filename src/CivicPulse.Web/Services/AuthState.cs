@@ -19,6 +19,12 @@ public class AuthState
         OnChange?.Invoke();
     }
 
+    public void SetEmail(string email)
+    {
+        Email = email;
+        OnChange?.Invoke();
+    }
+
     public void Clear(IJSRuntime? js = null)
     {
         Token = null;

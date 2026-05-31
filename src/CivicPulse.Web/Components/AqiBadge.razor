@@ -1,31 +1,40 @@
 <div class="card h-100">
     <div class="card-body">
         <h5 class="card-title">Air Quality</h5>
-        <div class="aqi-badge-row mb-3">
-            <span class="badge fs-6 @AqiBadgeClass">@AirQuality.AqiCategory</span>
-            <span class="aqi-number ms-2">AQI @AirQuality.Aqi.ToString("F0")</span>
-        </div>
-        <div class="row g-2">
-            <div class="col-6">
-                <small class="text-muted d-block">PM₂.₅</small>
-                <strong>@AirQuality.Pm25.ToString("F1") µg/m³</strong>
-            </div>
-            <div class="col-6">
-                <small class="text-muted d-block">PM₁₀</small>
-                <strong>@AirQuality.Pm10.ToString("F1") µg/m³</strong>
-            </div>
-            <div class="col-6">
-                <small class="text-muted d-block">NO₂</small>
-                <strong>@AirQuality.No2.ToString("F1") µg/m³</strong>
-            </div>
-            <div class="col-6">
-                <small class="text-muted d-block">O₃</small>
-                <strong>@AirQuality.O3.ToString("F1") µg/m³</strong>
-            </div>
-        </div>
-        @if (AirQuality.DominantPollutant is not null)
+        @if (AirQuality.AqiCategory == "Unknown")
         {
-            <small class="text-muted mt-2 d-block">Dominant: @AirQuality.DominantPollutant</small>
+            <p class="text-muted mb-0">
+                <small>No sensor data available near this location.</small>
+            </p>
+        }
+        else
+        {
+            <div class="aqi-badge-row mb-3">
+                <span class="badge fs-6 @AqiBadgeClass">@AirQuality.AqiCategory</span>
+                <span class="aqi-number ms-2">AQI @AirQuality.Aqi.ToString("F0")</span>
+            </div>
+            <div class="row g-2">
+                <div class="col-6">
+                    <small class="text-muted d-block">PM₂.₅</small>
+                    <strong>@AirQuality.Pm25.ToString("F1") µg/m³</strong>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted d-block">PM₁₀</small>
+                    <strong>@AirQuality.Pm10.ToString("F1") µg/m³</strong>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted d-block">NO₂</small>
+                    <strong>@AirQuality.No2.ToString("F1") µg/m³</strong>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted d-block">O₃</small>
+                    <strong>@AirQuality.O3.ToString("F1") µg/m³</strong>
+                </div>
+            </div>
+            @if (AirQuality.DominantPollutant is not null)
+            {
+                <small class="text-muted mt-2 d-block">Dominant: @AirQuality.DominantPollutant</small>
+            }
         }
     </div>
 </div>

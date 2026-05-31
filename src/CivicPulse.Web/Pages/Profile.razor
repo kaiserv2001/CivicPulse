@@ -1,0 +1,133 @@
+@page "/profile"
+@inject AuthState Auth
+@inject ApiClient Api
+@inject NavigationManager Nav
+
+<PageTitle>Profile — CivicPulse</PageTitle>
+
+@if (_loading)
+{
+    <div class="d-flex justify-content-center py-5">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+    </div>
+}
+else
+{
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="mb-1">Your Profile</h2>
+            <p class="text-muted mb-4">Member since @_profile!.CreatedAt.ToString("MMMM d, yyyy")</p>
+
+            <!-- Update email -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Email Address</h5>
+                    <p class="text-muted small mb-3">Current: <strong>@_profile.Email</strong></p>
+                    <div class="mb-3">
+                        <label class="form-label">New email</label>
+                        <input class="form-control" type="email" @bind="_newEmail" placeholder="new@example.com" />
+                    </div>
+                    @if (_emailMsg is not null)
+                    {
+                        <div class="alert @(_emailOk ? "alert-success" : "alert-danger") py-2">@_emailMsg</div>
+                    }
+                    <button class="btn btn-primary" @onclick="SaveEmail" disabled="@_savingEmail">
+                        @(_savingEmail ? "Saving…" : "Save email")
+                    </button>
+                </div>
+            </div>
+
+            <!-- Change password -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Change Password</h5>
+                    <div class="mb-3">
+                        <label class="form-label">Current password</label>
+                        <input class="form-control" type="password" @bind="_currentPw" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New password</label>
+                        <input class="form-control" type="password" @bind="_newPw" />
+                    </div>
+                    @if (_pwMsg is not null)
+                    {
+                        <div class="alert @(_pwOk ? "alert-success" : "alert-danger") py-2">@_pwMsg</div>
+                    }
+                    <button class="btn btn-primary" @onclick="SavePassword" disabled="@_savingPw">
+                        @(_savingPw ? "Saving…" : "Change password")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private ProfileInfo? _profile;
+
+    private string _newEmail = string.Empty;
+    private string? _emailMsg;
+    private bool _emailOk;
+    private bool _savingEmail;
+
+    private string _currentPw = string.Empty;
+    private string _newPw = string.Empty;
+    private string? _pwMsg;
+    private bool _pwOk;
+    private bool _savingPw;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        _profile = await Api.GetProfileAsync();
+        _loading = false;
+    }
+
+    private async Task SaveEmail()
+    {
+        if (string.IsNullOrWhiteSpace(_newEmail)) return;
+        _savingEmail = true;
+        _emailMsg = null;
+        var (ok, updated, err) = await Api.UpdateEmailAsync(_newEmail);
+        if (ok && updated is not null)
+        {
+            _profile = updated;
+            Auth.SetEmail(updated.Email);
+            _emailMsg = "Email updated successfully.";
+            _emailOk = true;
+            _newEmail = string.Empty;
+        }
+        else
+        {
+            _emailMsg = err ?? "Failed to update email.";
+            _emailOk = false;
+        }
+        _savingEmail = false;
+    }
+
+    private async Task SavePassword()
+    {
+        if (string.IsNullOrWhiteSpace(_currentPw) || string.IsNullOrWhiteSpace(_newPw)) return;
+        _savingPw = true;
+        _pwMsg = null;
+        var (ok, err) = await Api.UpdatePasswordAsync(_currentPw, _newPw);
+        if (ok)
+        {
+            _pwMsg = "Password changed successfully.";
+            _pwOk = true;
+            _currentPw = string.Empty;
+            _newPw = string.Empty;
+        }
+        else
+        {
+            _pwMsg = err ?? "Failed to change password.";
+            _pwOk = false;
+        }
+        _savingPw = false;
+    }
+}

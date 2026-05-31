@@ -94,9 +94,44 @@ public class ApiClient(HttpClient http, AuthState auth)
         return (false, null, "Registration failed.");
     }
 
+    public async Task<ProfileInfo?> GetProfileAsync(CancellationToken ct = default)
+    {
+        ApplyAuth();
+        try { return await http.GetFromJsonAsync<ProfileInfo>("api/profile", ct); }
+        catch { return null; }
+    }
+
+    public async Task<(bool success, ProfileInfo? profile, string? error)> UpdateEmailAsync(
+        string newEmail, CancellationToken ct = default)
+    {
+        ApplyAuth();
+        var response = await http.PutAsJsonAsync("api/profile/email", new { newEmail }, ct);
+        if (response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadFromJsonAsync<ProfileInfo>(ct);
+            return (true, body, null);
+        }
+        if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            return (false, null, "Email already in use.");
+        return (false, null, "Failed to update email.");
+    }
+
+    public async Task<(bool success, string? error)> UpdatePasswordAsync(
+        string currentPassword, string newPassword, CancellationToken ct = default)
+    {
+        ApplyAuth();
+        var response = await http.PutAsJsonAsync("api/profile/password",
+            new { currentPassword, newPassword }, ct);
+        if (response.IsSuccessStatusCode) return (true, null);
+        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            return (false, "Current password is incorrect.");
+        return (false, "Failed to update password.");
+    }
+
     private record FavoriteCreated(int Id, int LocationId, string Name);
     private record TokenResponse(string Token);
 }
 
 public record FavoriteItem(int Id, string? Alias, DateTime SavedAt, SavedLocation Location);
 public record SavedLocation(int Id, string Name, string Country, double Latitude, double Longitude);
+public record ProfileInfo(string Email, DateTime CreatedAt);

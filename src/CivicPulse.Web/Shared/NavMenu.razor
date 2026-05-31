@@ -1,5 +1,6 @@
 @inject AuthState Auth
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @implements IDisposable
 
 <header class="navbar navbar-expand-lg navbar-dark bg-dark px-3 mb-0">
@@ -20,13 +21,21 @@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/favorites">Favorites</NavLink>
                 </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/profile">Profile</NavLink>
+                </li>
             }
         </ul>
-        <ul class="navbar-nav">
+        <ul class="navbar-nav align-items-center gap-2">
+            <li class="nav-item">
+                <button class="btn btn-sm btn-outline-light" title="Toggle dark mode" @onclick="ToggleTheme">
+                    @(_isDark ? "☀️" : "🌙")
+                </button>
+            </li>
             @if (Auth.IsAuthenticated)
             {
                 <li class="nav-item align-self-center">
-                    <span class="navbar-text text-light me-2">@Auth.Email</span>
+                    <span class="navbar-text text-light">@Auth.Email</span>
                 </li>
                 <li class="nav-item">
                     <button class="btn btn-sm btn-outline-light" @onclick="Logout">Sign out</button>
@@ -43,8 +52,27 @@
 </header>
 
 @code {
+    private bool _isDark;
+    private bool _jsReady;
+
     protected override void OnInitialized() => Auth.OnChange += StateHasChanged;
     public void Dispose() => Auth.OnChange -= StateHasChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _jsReady = true;
+        var theme = await JS.InvokeAsync<string>("themeInterop.init");
+        _isDark = theme == "dark";
+        StateHasChanged();
+    }
+
+    private async Task ToggleTheme()
+    {
+        if (!_jsReady) return;
+        _isDark = !_isDark;
+        await JS.InvokeVoidAsync("themeInterop.set", _isDark ? "dark" : "light");
+    }
 
     private void Logout()
     {
