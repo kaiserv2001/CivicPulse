@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<FavoriteLocation> FavoriteLocations => Set<FavoriteLocation>();
     public DbSet<WeatherCache> WeatherCaches => Set<WeatherCache>();
     public DbSet<AirQualityCache> AirQualityCaches => Set<AirQualityCache>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,6 +56,15 @@ public class AppDbContext : DbContext
         {
             b.HasKey(a => a.Id);
             b.HasIndex(a => new { a.LocationId, a.FetchedAt });
+        });
+
+        modelBuilder.Entity<PushSubscription>(b =>
+        {
+            b.HasKey(p => p.Id);
+            b.HasIndex(p => p.UserId);
+            b.Property(p => p.Endpoint).HasMaxLength(2048).IsRequired();
+            b.Property(p => p.P256dh).HasMaxLength(256).IsRequired();
+            b.Property(p => p.Auth).HasMaxLength(64).IsRequired();
         });
     }
 }

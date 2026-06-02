@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net.Http;
 using CivicPulse.Core.Models;
 
 namespace CivicPulse.Web.Services;
@@ -130,6 +131,36 @@ public class ApiClient(HttpClient http, AuthState auth)
             return (false, "Current password is incorrect.");
         return (false, "Failed to update password.");
     }
+
+    public async Task<string?> GetVapidPublicKeyAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var r = await http.GetFromJsonAsync<VapidKeyResponse>("api/push/vapid-public-key", ct);
+            return r?.PublicKey;
+        }
+        catch { return null; }
+    }
+
+    public async Task<bool> PushSubscribeAsync(string endpoint, string p256dh, string auth, CancellationToken ct = default)
+    {
+        ApplyAuth();
+        var response = await http.PostAsJsonAsync("api/push/subscribe", new { endpoint, p256dh, auth }, ct);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> PushUnsubscribeAsync(string endpoint, CancellationToken ct = default)
+    {
+        ApplyAuth();
+        var response = await http.SendAsync(
+            new HttpRequestMessage(HttpMethod.Delete, "api/push/subscribe")
+            {
+                Content = JsonContent.Create(new { endpoint })
+            }, ct);
+        return response.IsSuccessStatusCode;
+    }
+
+    private record VapidKeyResponse(string PublicKey);
 
     private record FavoriteCreated(int Id, int LocationId, string Name);
     private record TokenResponse(string Token);

@@ -8,5 +8,7 @@ public class FavoriteLocation
     public string? Alias { get; set; }
     public DateTime SavedAt { get; set; } = DateTime.UtcNow;
 
+    public DateTime? NotifiedLowScoreAt { get; set; }
+
     public Location Location { get; set; } = null!;
 }
