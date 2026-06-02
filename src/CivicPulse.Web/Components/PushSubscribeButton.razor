@@ -1,0 +1,89 @@
+@inject ApiClient Api
+@inject AuthState Auth
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@if (!_supported || !Auth.IsAuthenticated) { return; }
+
+@if (_subscribed)
+{
+    <button class="btn btn-sm btn-outline-secondary" @onclick="UnsubscribeAsync" disabled="@_busy">
+        🔔 Notifications on
+    </button>
+}
+else
+{
+    <button class="btn btn-sm btn-outline-primary" @onclick="SubscribeAsync" disabled="@_busy"
+            title="Get notified when the outdoor score drops below 40">
+        🔕 Enable notifications
+    </button>
+}
+
+@if (_error is not null)
+{
+    <span class="text-danger ms-2 small">@_error</span>
+}
+
+@code {
+    private bool _supported;
+    private bool _subscribed;
+    private bool _busy;
+    private string? _error;
+    private string? _vapidPublicKey;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _supported = await JS.InvokeAsync<bool>("pushInterop.isSupported");
+        if (!_supported) return;
+
+        _vapidPublicKey = await Api.GetVapidPublicKeyAsync();
+        var endpoint = await JS.InvokeAsync<string?>("pushInterop.getCurrentEndpoint");
+        _subscribed = endpoint is not null;
+        StateHasChanged();
+    }
+
+    private async Task SubscribeAsync()
+    {
+        _busy = true; _error = null;
+        try
+        {
+            var permission = await JS.InvokeAsync<string>("pushInterop.requestPermission");
+            if (permission != "granted") { _error = "Notification permission denied."; return; }
+
+            var subJson = await JS.InvokeAsync<string>("pushInterop.subscribe", _vapidPublicKey);
+            var sub = System.Text.Json.JsonDocument.Parse(subJson).RootElement;
+            var endpoint = sub.GetProperty("endpoint").GetString()!;
+            var p256dh = sub.GetProperty("keys").GetProperty("p256dh").GetString()!;
+            var auth = sub.GetProperty("keys").GetProperty("auth").GetString()!;
+
+            await Api.PushSubscribeAsync(endpoint, p256dh, auth);
+            _subscribed = true;
+        }
+        catch (Exception ex)
+        {
+            _error = "Could not enable notifications.";
+            Console.Error.WriteLine(ex);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task UnsubscribeAsync()
+    {
+        _busy = true; _error = null;
+        try
+        {
+            var endpoint = await JS.InvokeAsync<string?>("pushInterop.unsubscribe");
+            if (endpoint is not null) await Api.PushUnsubscribeAsync(endpoint);
+            _subscribed = false;
+        }
+        catch (Exception ex)
+        {
+            _error = "Could not disable notifications.";
+            Console.Error.WriteLine(ex);
+        }
+        finally { _busy = false; }
+    }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}
