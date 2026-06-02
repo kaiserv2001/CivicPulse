@@ -14,19 +14,18 @@ namespace CivicPulse.UnitTests.Services;
 
 public class OpenMeteoClientTests
 {
-    // JSON keys use camelCase to match System.Text.Json's web defaults (PropertyNameCaseInsensitive=true)
     private const string CurrentWeatherJson = """
         {
           "current": {
-            "temperature2m": 15.5,
-            "apparentTemperature": 13.0,
-            "windSpeed10m": 20.0,
-            "windGusts10m": 28.0,
+            "temperature_2m": 15.5,
+            "apparent_temperature": 13.0,
+            "wind_speed_10m": 20.0,
+            "wind_gusts_10m": 28.0,
             "precipitation": 0.0,
-            "precipitationProbability": 10.0,
-            "uvIndex": 3.0,
-            "relativeHumidity2m": 55.0,
-            "weatherCode": 0
+            "precipitation_probability": 10.0,
+            "uv_index": 3.0,
+            "relative_humidity_2m": 55.0,
+            "weather_code": 0
           }
         }
         """;
