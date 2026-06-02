@@ -35,6 +35,8 @@ services:
       ConnectionStrings__DefaultConnection: "Server=db,1433;Database=CivicPulse;User Id=sa;Password=CivicPulse_Dev123!;TrustServerCertificate=True"
       ConnectionStrings__Redis: "redis:6379"
       OpenAQ__ApiKey: "${OPENAQ_API_KEY}"
+      Vapid__PublicKey: "${VAPID_PUBLIC_KEY}"
+      Vapid__PrivateKey: "${VAPID_PRIVATE_KEY}"
     depends_on:
       db:
         condition: service_healthy
