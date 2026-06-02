@@ -12,7 +12,7 @@ public class OutdoorScoringServiceTests
     private static WeatherData IdealWeather() => new(
         TemperatureCelsius: 22, FeelsLikeCelsius: 22, WindSpeedKmh: 10, WindGustKmh: 15,
         PrecipitationMm: 0, PrecipitationProbability: 0, UvIndex: 3,
-        RelativeHumidity: 50, WeatherCode: 800, WeatherDescription: "Clear sky", ObservedAt: DateTime.UtcNow);
+        RelativeHumidity: 50, WeatherCode: 0, WeatherDescription: "Clear sky", ObservedAt: DateTime.UtcNow);
 
     private static AirQualityData GoodAir() =>
         new(Aqi: 30, Pm25: 8, Pm10: 15, No2: 10, O3: 40, Co: 0.5, AqiCategory: "Good",
@@ -43,7 +43,7 @@ public class OutdoorScoringServiceTests
     [Fact]
     public void Calculate_Thunderstorm_PenalizesWeatherScore()
     {
-        var storm = IdealWeather() with { WeatherCode = 200 };
+        var storm = IdealWeather() with { WeatherCode = 95 }; // Open-Meteo: 95 = thunderstorm
         var score = _sut.Calculate(storm, GoodAir());
 
         score.WeatherScore.Should().BeLessThan(50);
@@ -70,7 +70,7 @@ public class OutdoorScoringServiceTests
     [Fact]
     public void Calculate_TotalIsClamped_Between0And100()
     {
-        var worstCase = (IdealWeather() with { WeatherCode = 200, WindSpeedKmh = 80 });
+        var worstCase = (IdealWeather() with { WeatherCode = 95, WindSpeedKmh = 80 });
         var score = _sut.Calculate(worstCase, HazardousAir());
 
         score.Total.Should().BeInRange(0, 100);

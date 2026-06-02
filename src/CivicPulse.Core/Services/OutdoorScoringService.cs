@@ -53,22 +53,47 @@ public class OutdoorScoringService : IOutdoorScoringService
 
     private static int ScoreWeather(WeatherData w)
     {
-        // Start at 100 and deduct
+        // Start at 100 and deduct.
+        // Open-Meteo WMO weather codes — different from OpenWeatherMap codes.
         int score = 100;
         score -= w.WeatherCode switch
         {
-            >= 200 and <= 299 => 60, // Thunderstorm
-            >= 300 and <= 399 => 30, // Drizzle
-            >= 500 and <= 531 => 45, // Rain
-            >= 600 and <= 622 => 50, // Snow
-            >= 700 and <= 781 => 20, // Fog/mist
-            800 => 0,                // Clear
-            >= 801 and <= 804 => 10, // Cloudy
-            _ => 10
+            0            =>  0,  // Clear sky
+            1 or 2       =>  5,  // Mainly clear / partly cloudy
+            3            => 10,  // Overcast
+            45 or 48     => 20,  // Fog / icy fog
+            51           => 20,  // Light drizzle
+            53           => 30,  // Moderate drizzle
+            55           => 35,  // Dense drizzle
+            61           => 35,  // Slight rain
+            63           => 45,  // Moderate rain
+            65           => 55,  // Heavy rain
+            71           => 40,  // Slight snow
+            73           => 50,  // Moderate snow
+            75           => 60,  // Heavy snow
+            77           => 25,  // Snow grains
+            80           => 30,  // Slight rain showers
+            81           => 45,  // Moderate rain showers
+            82           => 60,  // Violent rain showers
+            85           => 40,  // Slight snow showers
+            86           => 55,  // Heavy snow showers
+            95           => 65,  // Thunderstorm
+            96 or 99     => 75,  // Thunderstorm with hail
+            _            => 10
         };
 
+        // Temperature penalty (actual, not feels-like)
         if (w.TemperatureCelsius > 38 || w.TemperatureCelsius < 0) score -= 25;
         else if (w.TemperatureCelsius > 33 || w.TemperatureCelsius < 5) score -= 15;
+
+        // High precipitation probability matters even if it isn't raining yet
+        score -= w.PrecipitationProbability switch
+        {
+            >= 80 => 15,
+            >= 60 =>  8,
+            >= 40 =>  3,
+            _     =>  0
+        };
 
         return Math.Clamp(score, 0, 100);
     }
