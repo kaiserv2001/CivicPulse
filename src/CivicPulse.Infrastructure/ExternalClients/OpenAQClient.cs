@@ -11,6 +11,7 @@ namespace CivicPulse.Infrastructure.ExternalClients;
 // OpenAQ API v3: https://api.openaq.org/v3
 // Flow: GET /v3/locations (find nearby active stations + sensor IDs)
 //    →  GET /v3/locations/{id}/latest (current readings per sensor)
+//    →  GET /v3/sensors/{sensorId}/measurements?period_name=day (7-day trend)
 public class OpenAQClient : IAirQualityService
 {
     private readonly HttpClient _http;
@@ -21,8 +22,8 @@ public class OpenAQClient : IAirQualityService
 
     public OpenAQClient(HttpClient http, IDistributedCache cache, ILogger<OpenAQClient> logger)
     {
-        _http  = http;
-        _cache = cache;
+        _http   = http;
+        _cache  = cache;
         _logger = logger;
     }
 
@@ -35,50 +36,26 @@ public class OpenAQClient : IAirQualityService
 
         _logger.LogInformation("Fetching air quality for {Lat},{Lon}", latitude, longitude);
 
-        // Step 1 — find nearby monitoring stations
-        var locUrl = $"v3/locations?coordinates={latitude},{longitude}&radius=25000&limit=10";
-        OpenAQLocationsResponse? locResp;
-        try
-        {
-            locResp = await _http.GetFromJsonAsync<OpenAQLocationsResponse>(locUrl, ct);
-        }
-        catch (HttpRequestException ex) when (ex.StatusCode is
-            System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
-        {
-            _logger.LogWarning("OpenAQ API key rejected (HTTP {Status}); returning default.", ex.StatusCode);
-            return DefaultAirQuality();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "OpenAQ locations request failed; returning default.");
-            return DefaultAirQuality();
-        }
+        var locResp = await FetchLocationsAsync(latitude, longitude, ct);
+        if (locResp is null) return DefaultAirQuality();
 
-        if (locResp?.Results is null || locResp.Results.Length == 0)
-        {
-            _logger.LogWarning("No AQ stations found near {Lat},{Lon}", latitude, longitude);
-            return DefaultAirQuality();
-        }
-
-        // Step 2 — pick the most recently active station (data within last 48 h)
-        var cutoff = DateTime.UtcNow.AddHours(-48);
+        // Pick the most recently active station that has sensors — no hard time cutoff
+        // so stations that report daily (common outside Europe/US) still show data.
         var best = locResp.Results
-            .Where(l => l.DatetimeLast?.Utc >= cutoff && l.Sensors?.Length > 0)
-            .OrderByDescending(l => l.DatetimeLast!.Utc)
+            .Where(l => l.Sensors?.Length > 0)
+            .OrderByDescending(l => l.DatetimeLast?.Utc ?? DateTime.MinValue)
             .FirstOrDefault();
 
         if (best is null)
         {
-            _logger.LogWarning("No active (< 48 h) AQ sensors near {Lat},{Lon}", latitude, longitude);
+            _logger.LogWarning("No AQ stations with sensors near {Lat},{Lon}", latitude, longitude);
             return DefaultAirQuality();
         }
 
-        // Build sensor-id → parameter-name map from the locations payload
         var sensorToParam = best.Sensors!
             .Where(s => s.Parameter?.Name is not null)
             .ToDictionary(s => s.Id, s => s.Parameter!.Name!);
 
-        // Step 3 — get the latest reading for each sensor at that station
         OpenAQLatestResponse? latestResp;
         try
         {
@@ -94,7 +71,6 @@ public class OpenAQClient : IAirQualityService
         if (latestResp?.Results is null || latestResp.Results.Length == 0)
             return DefaultAirQuality();
 
-        // Step 4 — map readings to parameter names
         var vals = new Dictionary<string, double>();
         foreach (var r in latestResp.Results)
             if (r.Value >= 0 && sensorToParam.TryGetValue(r.SensorsId, out var param))
@@ -117,8 +93,6 @@ public class OpenAQClient : IAirQualityService
         return result;
     }
 
-    // Historical daily data is not available on the free OpenAQ v3 tier;
-    // the trend chart shows "No data" until a paid tier or archive is accessible.
     public async Task<IReadOnlyList<AqTrendDay>> GetAqTrendAsync(
         double latitude, double longitude, CancellationToken ct = default)
     {
@@ -126,10 +100,93 @@ public class OpenAQClient : IAirQualityService
         var cached = await _cache.GetJsonAsync<List<AqTrendDay>>(cacheKey, ct);
         if (cached is not null) return cached;
 
-        return EmptyTrend();
+        _logger.LogInformation("Fetching AQ trend for {Lat},{Lon}", latitude, longitude);
+
+        var locResp = await FetchLocationsAsync(latitude, longitude, ct);
+        if (locResp is null) return EmptyTrend();
+
+        // Find the station with a PM2.5 sensor, preferring the most recently active
+        OpenAQLocation? bestStation = null;
+        int pm25SensorId = 0;
+
+        foreach (var loc in locResp.Results
+            .Where(l => l.Sensors?.Length > 0)
+            .OrderByDescending(l => l.DatetimeLast?.Utc ?? DateTime.MinValue))
+        {
+            var pm25Sensor = loc.Sensors!.FirstOrDefault(s =>
+                string.Equals(s.Parameter?.Name, "pm25", StringComparison.OrdinalIgnoreCase));
+            if (pm25Sensor is not null)
+            {
+                bestStation = loc;
+                pm25SensorId = pm25Sensor.Id;
+                break;
+            }
+        }
+
+        if (bestStation is null)
+        {
+            _logger.LogWarning("No PM2.5 sensor found near {Lat},{Lon} for trend.", latitude, longitude);
+            return EmptyTrend();
+        }
+
+        var dateFrom = DateTime.UtcNow.AddDays(-7).ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var dateTo   = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var url = $"v3/sensors/{pm25SensorId}/measurements" +
+                  $"?period_name=day&date_from={Uri.EscapeDataString(dateFrom)}&date_to={Uri.EscapeDataString(dateTo)}&limit=7";
+
+        OpenAQMeasurementsResponse? measResp;
+        try
+        {
+            measResp = await _http.GetFromJsonAsync<OpenAQMeasurementsResponse>(url, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "OpenAQ measurements request failed for sensor {Id}.", pm25SensorId);
+            return EmptyTrend();
+        }
+
+        if (measResp?.Results is null || measResp.Results.Length == 0)
+            return EmptyTrend();
+
+        var trend = measResp.Results
+            .Where(r => r.Period?.DatetimeFrom?.Utc is not null && r.Value >= 0)
+            .OrderBy(r => r.Period!.DatetimeFrom!.Utc)
+            .Select(r =>
+            {
+                var date = DateOnly.FromDateTime(r.Period!.DatetimeFrom!.Utc);
+                var aqi  = CalculateUsAqi(r.Value);
+                return new AqTrendDay(date, aqi, AqiCategory(aqi));
+            })
+            .ToList();
+
+        if (trend.Count == 0) return EmptyTrend();
+
+        await _cache.SetJsonAsync(cacheKey, trend, TrendCacheTtl, ct);
+        return trend;
     }
 
-    // ── helpers ────────────────────────────────────────────────────────────
+    // ── shared helpers ─────────────────────────────────────────────────────
+
+    private async Task<OpenAQLocationsResponse?> FetchLocationsAsync(
+        double latitude, double longitude, CancellationToken ct)
+    {
+        var url = $"v3/locations?coordinates={latitude},{longitude}&radius=25000&limit=10";
+        try
+        {
+            return await _http.GetFromJsonAsync<OpenAQLocationsResponse>(url, ct);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is
+            System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+        {
+            _logger.LogWarning("OpenAQ API key rejected (HTTP {Status}).", ex.StatusCode);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "OpenAQ locations request failed.");
+            return null;
+        }
+    }
 
     private static double CalculateUsAqi(double pm25) => pm25 switch
     {
@@ -188,4 +245,13 @@ public class OpenAQClient : IAirQualityService
     private sealed record OpenAQLatestResult(
         double Value,
         [property: JsonPropertyName("sensorsId")] int SensorsId);
+
+    private sealed record OpenAQMeasurementsResponse(OpenAQMeasurement[] Results);
+
+    private sealed record OpenAQMeasurement(
+        double Value,
+        [property: JsonPropertyName("period")] OpenAQPeriod? Period);
+
+    private sealed record OpenAQPeriod(
+        [property: JsonPropertyName("datetimeFrom")] OpenAQDatetime? DatetimeFrom);
 }
