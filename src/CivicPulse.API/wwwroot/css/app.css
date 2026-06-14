@@ -57,8 +57,8 @@
 /* Winner banner */
 .winner-banner { font-size: 1.05rem; border-radius: 8px; }
 
-/* Cards equal height */
-.card { height: 100%; }
+/* Dashboard/compare grid cards opt into equal height with the `h-100` class
+   directly in markup — no global card height (it broke stacked cards on Profile). */
 
 /* Dark mode overrides for custom elements */
 [data-bs-theme="dark"] .skeleton { background: #374151; }
