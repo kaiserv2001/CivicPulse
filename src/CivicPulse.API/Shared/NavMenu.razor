@@ -1,10 +1,14 @@
 @inject AuthState Auth
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @implements IDisposable
 
 <header class="navbar navbar-expand-lg navbar-dark bg-dark px-3 mb-0">
-    <a class="navbar-brand fw-bold" href="/">&#127780; CivicPulse</a>
+    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+        <span>&#127780; CivicPulse</span>
+        <span class="badge rounded-pill bg-info text-dark fw-semibold" style="font-size:.6rem;letter-spacing:.05em;">LIVE DEMO</span>
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -16,6 +20,12 @@
             <li class="nav-item">
                 <NavLink class="nav-link" href="/compare">Compare</NavLink>
             </li>
+            @if (Env.IsDevelopment())
+            {
+                <li class="nav-item">
+                    <a class="nav-link" href="/swagger" target="_blank" rel="noopener" title="Explore the REST API (Swagger UI)">API Docs ↗</a>
+                </li>
+            }
             @if (Auth.IsAuthenticated)
             {
                 <li class="nav-item">
