@@ -1,13 +1,17 @@
 @inject ApiClient Api
 @inject AuthState Auth
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <div class="city-search-box">
     <div class="input-wrapper">
+        @* Uncontrolled input: the browser owns the text so fast typing isn't
+           disrupted by server re-renders writing a stale `value` back to the DOM.
+           @oninput only drives the debounced search; selection is reflected via JS. *@
         <input type="text"
+               @ref="_searchInput"
                class="form-control form-control-lg"
                placeholder="Search for a city..."
-               value="@_query"
                @oninput="OnInputChanged" />
         @if (_loading)
         {
@@ -43,6 +47,7 @@
     private bool _loading = false;
     private string? _error = null;
     private CancellationTokenSource _cts = new();
+    private ElementReference _searchInput;
 
     private async Task OnInputChanged(ChangeEventArgs e)
     {
@@ -81,6 +86,8 @@
     {
         _results = [];
         _query = result.DisplayName;
+        // Reflect the chosen city in the uncontrolled input.
+        await JS.InvokeVoidAsync("searchBox.setValue", _searchInput, result.DisplayName);
 
         if (!Auth.IsAuthenticated)
         {
