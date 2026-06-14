@@ -18,7 +18,7 @@ public class OpenAQClient : IAirQualityService
     private readonly IDistributedCache _cache;
     private readonly ILogger<OpenAQClient> _logger;
     private static readonly TimeSpan CurrentCacheTtl = TimeSpan.FromMinutes(60);
-    private static readonly TimeSpan TrendCacheTtl   = TimeSpan.FromMinutes(60);
+    private static readonly TimeSpan TrendCacheTtl   = TimeSpan.FromHours(6);
 
     public OpenAQClient(HttpClient http, IDistributedCache cache, ILogger<OpenAQClient> logger)
     {
@@ -105,64 +105,73 @@ public class OpenAQClient : IAirQualityService
         var locResp = await FetchLocationsAsync(latitude, longitude, ct);
         if (locResp is null) return EmptyTrend();
 
-        // Find the station with a PM2.5 sensor, preferring the most recently active
-        OpenAQLocation? bestStation = null;
-        int pm25SensorId = 0;
-
-        foreach (var loc in locResp.Results
+        // Candidate PM2.5 sensors, most-recently-active station first. A station can report
+        // current (hourly) data yet have no recent daily aggregate, so we don't commit to the
+        // first one — we try each until a sensor actually returns daily data, capped to keep
+        // API usage bounded.
+        var candidates = locResp.Results
             .Where(l => l.Sensors?.Length > 0)
-            .OrderByDescending(l => l.DatetimeLast?.Utc ?? DateTime.MinValue))
-        {
-            var pm25Sensor = loc.Sensors!.FirstOrDefault(s =>
-                string.Equals(s.Parameter?.Name, "pm25", StringComparison.OrdinalIgnoreCase));
-            if (pm25Sensor is not null)
-            {
-                bestStation = loc;
-                pm25SensorId = pm25Sensor.Id;
-                break;
-            }
-        }
+            .OrderByDescending(l => l.DatetimeLast?.Utc ?? DateTime.MinValue)
+            .Select(l => l.Sensors!.FirstOrDefault(s =>
+                string.Equals(s.Parameter?.Name, "pm25", StringComparison.OrdinalIgnoreCase)))
+            .Where(s => s is not null)
+            .Select(s => s!.Id)
+            .Distinct()
+            .Take(5)
+            .ToList();
 
-        if (bestStation is null)
+        if (candidates.Count == 0)
         {
             _logger.LogWarning("No PM2.5 sensor found near {Lat},{Lon} for trend.", latitude, longitude);
             return EmptyTrend();
         }
 
-        var dateFrom = DateTime.UtcNow.AddDays(-7).ToString("yyyy-MM-ddTHH:mm:ssZ");
-        var dateTo   = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
-        var url = $"v3/sensors/{pm25SensorId}/measurements" +
-                  $"?period_name=day&date_from={Uri.EscapeDataString(dateFrom)}&date_to={Uri.EscapeDataString(dateTo)}&limit=7";
+        // OpenAQ v3 daily aggregates live at /sensors/{id}/days (daily mean), not the raw
+        // /measurements endpoint. The range filter is date_from/date_to (date-only);
+        // note the /days endpoint silently ignores datetime_from/datetime_to and sort_order,
+        // so we must bound the range explicitly to get the *recent* 7 days rather than the
+        // oldest 7 in the sensor's history.
+        var dateFrom = DateTime.UtcNow.AddDays(-7).ToString("yyyy-MM-dd");
+        var dateTo   = DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd");
 
-        OpenAQMeasurementsResponse? measResp;
-        try
+        foreach (var sensorId in candidates)
         {
-            measResp = await _http.GetFromJsonAsync<OpenAQMeasurementsResponse>(url, ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "OpenAQ measurements request failed for sensor {Id}.", pm25SensorId);
-            return EmptyTrend();
-        }
+            var url = $"v3/sensors/{sensorId}/days" +
+                      $"?date_from={dateFrom}&date_to={dateTo}&limit=7";
 
-        if (measResp?.Results is null || measResp.Results.Length == 0)
-            return EmptyTrend();
-
-        var trend = measResp.Results
-            .Where(r => r.Period?.DatetimeFrom?.Utc is not null && r.Value >= 0)
-            .OrderBy(r => r.Period!.DatetimeFrom!.Utc)
-            .Select(r =>
+            OpenAQMeasurementsResponse? measResp;
+            try
             {
-                var date = DateOnly.FromDateTime(r.Period!.DatetimeFrom!.Utc);
-                var aqi  = CalculateUsAqi(r.Value);
-                return new AqTrendDay(date, aqi, AqiCategory(aqi));
-            })
-            .ToList();
+                measResp = await _http.GetFromJsonAsync<OpenAQMeasurementsResponse>(url, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "OpenAQ daily request failed for sensor {Id}; trying next.", sensorId);
+                continue;
+            }
 
-        if (trend.Count == 0) return EmptyTrend();
+            if (measResp?.Results is null || measResp.Results.Length == 0)
+                continue;
 
-        await _cache.SetJsonAsync(cacheKey, trend, TrendCacheTtl, ct);
-        return trend;
+            var trend = measResp.Results
+                .Where(r => r.Period?.DatetimeFrom?.Utc is not null && r.Value >= 0)
+                .OrderBy(r => r.Period!.DatetimeFrom!.Utc)
+                .Select(r =>
+                {
+                    var date = DateOnly.FromDateTime(r.Period!.DatetimeFrom!.Utc);
+                    var aqi  = CalculateUsAqi(r.Value);
+                    return new AqTrendDay(date, aqi, AqiCategory(aqi));
+                })
+                .ToList();
+
+            if (trend.Count == 0) continue;
+
+            await _cache.SetJsonAsync(cacheKey, trend, TrendCacheTtl, ct);
+            return trend;
+        }
+
+        _logger.LogWarning("No recent daily PM2.5 data near {Lat},{Lon} for trend.", latitude, longitude);
+        return EmptyTrend();
     }
 
     // ── shared helpers ─────────────────────────────────────────────────────
