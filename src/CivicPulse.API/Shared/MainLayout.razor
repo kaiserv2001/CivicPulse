@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @inject AuthState Auth
 @inject IJSRuntime JS
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @implements IAsyncDisposable
 
 <div class="page">
@@ -10,6 +11,18 @@
             @Body
         </div>
     </main>
+    <footer class="text-center small text-muted py-3 border-top">
+        <span class="me-1">Portfolio demo — live data from public APIs; accounts &amp; favorites are sample-only and reset periodically.</span>
+        @if (Env.IsDevelopment())
+        {
+            <span>·
+                <a href="/swagger" target="_blank" rel="noopener">API docs</a>
+            </span>
+        }
+        <span>·
+            <a href="https://github.com/kaiserv2001/CivicPulse" target="_blank" rel="noopener">Source on GitHub</a>
+        </span>
+    </footer>
 </div>
 
 @code {
