@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using CivicPulse.API.Services;
 using CivicPulse.Core.Interfaces;
 using CivicPulse.Core.Services;
 using CivicPulse.Infrastructure.BackgroundJobs;
@@ -102,6 +103,19 @@ try
         });
 
     builder.Services.AddControllers();
+
+    // Blazor Server UI (merged from the former CivicPulse.Web project)
+    builder.Services.AddRazorPages();
+    builder.Services.AddServerSideBlazor();
+    builder.Services.AddScoped<AuthState>();
+    builder.Services.AddHttpClient<ApiClient>(c =>
+    {
+        // The UI calls this same app's API endpoints over HTTP. ApiBaseUrl points
+        // back at the host (configured per environment); defaults to the local port.
+        c.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "http://localhost:8080");
+        c.Timeout = TimeSpan.FromSeconds(15);
+    });
+
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
     {
@@ -186,11 +200,17 @@ try
     }
 
     app.UseHttpsRedirection();
+    app.UseStaticFiles();
+    app.MapStaticAssets();   // .NET 10: serves _framework/blazor.server.js via manifest
+    app.UseRouting();
     app.UseCors();
     app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
+
     app.MapControllers();
+    app.MapBlazorHub();
+    app.MapFallbackToPage("/_Host");
 
     app.Run();
 }

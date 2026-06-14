@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Net.Http;
 using CivicPulse.Core.Models;
 
-namespace CivicPulse.Web.Services;
+namespace CivicPulse.API.Services;
 
 public class ApiClient(HttpClient http, AuthState auth)
 {
