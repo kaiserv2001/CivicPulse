@@ -2,6 +2,7 @@
 @inject AuthState Auth
 @inject ApiClient Api
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>Profile — CivicPulse</PageTitle>
 
@@ -77,15 +78,25 @@ else
     private bool _pwOk;
     private bool _savingPw;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender) return;
+
+        // The auth token is restored from localStorage only after the first render
+        // (JS interop isn't available during prerender). Wait for it here before
+        // gating — otherwise a signed-in user is bounced to /login on a fresh
+        // circuit (page refresh, new tab, or after the instance cold-starts).
+        await Auth.TryRestoreAsync(JS);
+
         if (!Auth.IsAuthenticated)
         {
-            Nav.NavigateTo("/login");
+            Nav.NavigateTo("/login?returnUrl=/profile");
             return;
         }
+
         _profile = await Api.GetProfileAsync();
         _loading = false;
+        StateHasChanged();
     }
 
     private async Task SaveEmail()
