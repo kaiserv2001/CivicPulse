@@ -7,10 +7,9 @@
 ```
 CivicPulse/
 ├── src/
-│   ├── CivicPulse.API/              # ASP.NET Core 10 Web API + Serilog + Swagger
+│   ├── CivicPulse.API/              # ASP.NET Core 10 Web API + Blazor Server UI + Serilog + Swagger
 │   ├── CivicPulse.Core/             # Domain entities, interfaces, models, scoring service
-│   ├── CivicPulse.Infrastructure/   # EF Core, HTTP clients, Redis cache, background job
-│   └── CivicPulse.Web/              # Blazor Server frontend
+│   └── CivicPulse.Infrastructure/   # EF Core, HTTP clients, Redis cache, background job
 └── tests/
     ├── CivicPulse.UnitTests/        # xUnit + Moq + FluentAssertions
     └── CivicPulse.IntegrationTests/ # WebApplicationFactory end-to-end
@@ -66,26 +65,22 @@ Grades: **A** (≥85) · **B** (≥70) · **C** (≥55) · **D** (≥40) · **F*
 ### Prerequisites
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 
-### 1. Run the API (in-memory database + in-memory cache)
+### 1. Run the app (API + Blazor UI, in-memory database + in-memory cache)
+
+The Web API and the Blazor Server UI are served from a single app.
 
 ```bash
-dotnet run --project src/CivicPulse.API --urls http://localhost:5000
+dotnet run --project src/CivicPulse.API
 ```
 
 The `"USE_INMEMORY": "1"` key in `appsettings.json` bypasses SQL Server and Redis entirely.  
-Swagger UI: http://localhost:5000/swagger
+The app binds to http://localhost:8080 by default (see `Properties/launchSettings.json`), and the
+UI calls its own API via the `ApiBaseUrl` setting — if you change the port, set `ApiBaseUrl` to match.
 
-### 2. Run the Blazor frontend
+- App / Blazor UI: http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger
 
-```bash
-ASPNETCORE_ENVIRONMENT=Development dotnet run \
-  --project src/CivicPulse.Web \
-  --urls http://localhost:5001
-```
-
-App: http://localhost:5001
-
-### 3. Run the tests
+### 2. Run the tests
 
 ```bash
 dotnet test
@@ -101,15 +96,15 @@ dotnet test
 docker compose up --build
 ```
 
+- App / Blazor UI: http://localhost:5000
 - API + Swagger: http://localhost:5000/swagger
-- Blazor UI: http://localhost:5001
 - Redis: `localhost:6379`
 
 EF migrations run automatically on startup. Cache entries survive container restarts via the named `redisdata` volume.
 
 ## TypeScript Client
 
-A typed TypeScript client can be generated from the live Swagger spec. Requires Node.js ≥ 18 and the API running at `localhost:5000`.
+A typed TypeScript client can be generated from the live Swagger spec. Requires Node.js ≥ 18 and the app running at `localhost:8080`.
 
 ```bash
 bash scripts/gen-ts-client.sh

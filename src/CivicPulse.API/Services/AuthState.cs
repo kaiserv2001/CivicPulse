@@ -1,6 +1,6 @@
 using Microsoft.JSInterop;
 
-namespace CivicPulse.Web.Services;
+namespace CivicPulse.API.Services;
 
 public class AuthState
 {

@@ -6,7 +6,6 @@ COPY CivicPulse.sln .
 COPY src/CivicPulse.Core/CivicPulse.Core.csproj             src/CivicPulse.Core/
 COPY src/CivicPulse.Infrastructure/CivicPulse.Infrastructure.csproj src/CivicPulse.Infrastructure/
 COPY src/CivicPulse.API/CivicPulse.API.csproj               src/CivicPulse.API/
-COPY src/CivicPulse.Web/CivicPulse.Web.csproj               src/CivicPulse.Web/
 COPY tests/CivicPulse.UnitTests/CivicPulse.UnitTests.csproj tests/CivicPulse.UnitTests/
 COPY tests/CivicPulse.IntegrationTests/CivicPulse.IntegrationTests.csproj tests/CivicPulse.IntegrationTests/
 
