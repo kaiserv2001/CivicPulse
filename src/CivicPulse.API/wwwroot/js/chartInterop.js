@@ -14,14 +14,30 @@ window.authStorage = {
     save: function (token, email) {
         localStorage.setItem('cp_token', token);
         localStorage.setItem('cp_email', email);
+        // Stamp the session with the current server's boot id. If the server later
+        // restarts (or wakes from idle as a fresh process) the id changes, which
+        // tells us the in-memory account behind this token has been wiped.
+        localStorage.setItem('cp_server', window.cpServerId || '');
     },
     load: function () {
-        return { token: localStorage.getItem('cp_token'), email: localStorage.getItem('cp_email') };
+        var token = localStorage.getItem('cp_token');
+        var savedServer = localStorage.getItem('cp_server');
+        // Server restarted since login -> account no longer exists -> force logout.
+        if (token && window.cpServerId && savedServer !== window.cpServerId) {
+            this.clear();
+            return { token: null, email: null };
+        }
+        return { token: token, email: localStorage.getItem('cp_email') };
     },
     clear: function () {
         localStorage.removeItem('cp_token');
         localStorage.removeItem('cp_email');
+        localStorage.removeItem('cp_server');
     }
+};
+
+window.searchBox = {
+    setValue: function (el, value) { if (el) el.value = value || ''; }
 };
 
 window.chartInterop = {
