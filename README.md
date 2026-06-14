@@ -2,6 +2,15 @@
 
 > Helps users decide whether it is a good day to walk, bike, commute, or work outdoors in any city.
 
+## Live Demo
+
+**🌐 [civicpulse-7ij3.onrender.com](https://civicpulse-7ij3.onrender.com)**
+
+Hosted free on Render (single app serving the Blazor UI + API). A couple of things to expect:
+
+- **Cold start:** the free instance sleeps after ~15 min of inactivity, so the first request may take ~30–50s to wake. Loads after that are fast.
+- **Ephemeral data:** it runs in in-memory mode — registered accounts and saved favorites are temporary and get wiped whenever the instance restarts or wakes from idle, which also signs you out. Use a throwaway email/password.
+
 ## Architecture
 
 ```
