@@ -87,9 +87,11 @@
         await JS.InvokeVoidAsync("themeInterop.set", _isDark ? "dark" : "light");
     }
 
-    private void Logout()
+    private async Task Logout()
     {
-        Auth.Clear();
+        // Clear the persisted token too, otherwise TryRestoreAsync re-authenticates
+        // the user from localStorage on the next load and the sign-out doesn't stick.
+        await Auth.ClearAsync(JS);
         Nav.NavigateTo("/");
     }
 }

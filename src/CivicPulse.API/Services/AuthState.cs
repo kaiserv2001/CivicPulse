@@ -34,6 +34,19 @@ public class AuthState
         OnChange?.Invoke();
     }
 
+    /// <summary>
+    /// Clears in-memory state and awaits removal of the persisted token from
+    /// localStorage, so a sign-out is not undone by <see cref="TryRestoreAsync"/>
+    /// on the next load.
+    /// </summary>
+    public async Task ClearAsync(IJSRuntime js)
+    {
+        Token = null;
+        Email = null;
+        await js.InvokeVoidAsync("authStorage.clear");
+        OnChange?.Invoke();
+    }
+
     public async Task TryRestoreAsync(IJSRuntime js)
     {
         if (IsAuthenticated) return;
