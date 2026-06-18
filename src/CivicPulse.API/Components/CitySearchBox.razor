@@ -13,10 +13,6 @@
                class="form-control form-control-lg"
                placeholder="Search for a city..."
                @oninput="OnInputChanged" />
-        @if (_loading)
-        {
-            <span class="spinner-border spinner-border-sm input-spinner text-secondary"></span>
-        }
     </div>
 
     @if (_error is not null)
@@ -24,7 +20,16 @@
         <div class="alert alert-danger py-2 mt-1 mb-0">Search failed. Please try again.</div>
     }
 
-    @if (_results.Count > 0 && !_loading)
+    @if (_loading)
+    {
+        <div class="search-dropdown list-group mt-1">
+            <div class="list-group-item search-status text-muted d-flex align-items-center gap-2">
+                <span class="spinner-border spinner-border-sm"></span>
+                <span>Searching…</span>
+            </div>
+        </div>
+    }
+    else if (_results.Count > 0)
     {
         <div class="search-dropdown list-group mt-1">
             @foreach (var result in _results)
@@ -37,6 +42,12 @@
             }
         </div>
     }
+    else if (_searched && _query.Length >= 2)
+    {
+        <div class="search-dropdown list-group mt-1">
+            <div class="list-group-item search-status text-muted">No matching cities found.</div>
+        </div>
+    }
 </div>
 
 @code {
@@ -45,6 +56,7 @@
     private string _query = "";
     private List<LocationSearchResult> _results = [];
     private bool _loading = false;
+    private bool _searched = false;
     private string? _error = null;
     private CancellationTokenSource _cts = new();
     private ElementReference _searchInput;
@@ -54,6 +66,7 @@
         _query = e.Value?.ToString() ?? "";
         _error = null;
         _results = [];
+        _searched = false;
 
         _cts.Cancel();
         _cts.Dispose();
@@ -69,6 +82,7 @@
 
             var results = await Api.SearchLocationsAsync(_query, _cts.Token);
             _results = results ?? [];
+            _searched = true;
         }
         catch (OperationCanceledException) { }
         catch

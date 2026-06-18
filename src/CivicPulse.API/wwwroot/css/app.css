@@ -30,8 +30,8 @@
 /* City search box */
 .city-search-box { position: relative; }
 .input-wrapper   { position: relative; }
-.input-spinner   { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
 .search-dropdown { position: absolute; z-index: 1000; width: 100%; max-height: 300px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.search-status   { font-size: 0.9rem; }
 
 /* Activity list */
 .activity-item {
