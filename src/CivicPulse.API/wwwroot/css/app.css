@@ -51,8 +51,24 @@
 @keyframes shimmer { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
 
 /* Hero */
-.hero { min-height: 280px; }
+.hero {
+    min-height: 280px;
+    background: radial-gradient(ellipse at top, rgba(20,184,166,0.10), transparent 70%);
+    border-radius: 16px;
+}
 .search-container { width: 100%; }
+
+/* How it works */
+.how-it-works { max-width: 900px; margin: 1.5rem auto 0; }
+.step-card {
+    padding: 1.5rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.step-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+.step-icon { font-size: 2rem; margin-bottom: 0.5rem; }
 
 /* Winner banner */
 .winner-banner { font-size: 1.05rem; border-radius: 8px; }
@@ -65,3 +81,6 @@
 [data-bs-theme="dark"] .activity-item { border-bottom-color: #374151; }
 [data-bs-theme="dark"] .aqi-number { color: #9ca3af; }
 [data-bs-theme="dark"] .search-dropdown { box-shadow: 0 4px 12px rgba(0,0,0,0.45); }
+[data-bs-theme="dark"] .hero { background: radial-gradient(ellipse at top, rgba(20,184,166,0.14), transparent 70%); }
+[data-bs-theme="dark"] .step-card { background: #1f2937; border-color: #374151; }
+[data-bs-theme="dark"] .step-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.45); }

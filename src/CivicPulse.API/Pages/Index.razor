@@ -21,6 +21,32 @@
     }
 </div>
 
+<div class="how-it-works container">
+    <div class="row text-center g-4">
+        <div class="col-md-4">
+            <div class="step-card h-100">
+                <div class="step-icon">🔍</div>
+                <h3 class="h6 fw-bold mb-1">Search a city</h3>
+                <p class="text-muted small mb-0">Type any city to pull its live conditions from across the globe.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="step-card h-100">
+                <div class="step-icon">🌤️</div>
+                <h3 class="h6 fw-bold mb-1">See live conditions</h3>
+                <p class="text-muted small mb-0">Real-time weather and air quality, updated as you look.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="step-card h-100">
+                <div class="step-icon">🏃</div>
+                <h3 class="h6 fw-bold mb-1">Get activity scores</h3>
+                <p class="text-muted small mb-0">A clear A–F grade for how good the day is to head outdoors.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 @code {
     protected override void OnInitialized() => Auth.OnChange += StateHasChanged;
     public void Dispose() => Auth.OnChange -= StateHasChanged;
