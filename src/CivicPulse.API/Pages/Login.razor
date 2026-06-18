@@ -86,7 +86,10 @@
     private bool _loading = false;
     private string? _error = null;
 
-    protected override void OnInitialized() => _isRegister = Register;
+    // Use OnParametersSet (not OnInitialized) so toggling between Sign In and
+    // Register via the nav links works even when already on the login page — the
+    // query string changes but the component isn't recreated.
+    protected override void OnParametersSet() => _isRegister = Register;
 
     private async Task SubmitAsync()
     {
