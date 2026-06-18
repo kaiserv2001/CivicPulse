@@ -73,6 +73,10 @@
 /* Winner banner */
 .winner-banner { font-size: 1.05rem; border-radius: 8px; }
 
+/* Demo account box (login page) */
+.demo-box { border: 2px dashed #cbd5e1; background: #f8fafc; }
+.demo-box code { color: inherit; }
+
 /* Dashboard/compare grid cards opt into equal height with the `h-100` class
    directly in markup — no global card height (it broke stacked cards on Profile). */
 
@@ -84,3 +88,4 @@
 [data-bs-theme="dark"] .hero { background: radial-gradient(ellipse at top, rgba(20,184,166,0.14), transparent 70%); }
 [data-bs-theme="dark"] .step-card { background: #1f2937; border-color: #374151; }
 [data-bs-theme="dark"] .step-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.45); }
+[data-bs-theme="dark"] .demo-box { border-color: #374151; background: #1f2937; }

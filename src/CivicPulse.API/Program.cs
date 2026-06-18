@@ -1,8 +1,11 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using CivicPulse.API;
 using CivicPulse.API.Services;
+using CivicPulse.Core.Entities;
 using CivicPulse.Core.Interfaces;
 using CivicPulse.Core.Services;
+using Microsoft.AspNetCore.Identity;
 using CivicPulse.Infrastructure.BackgroundJobs;
 using CivicPulse.Infrastructure.Data;
 using CivicPulse.Infrastructure.ExternalClients;
@@ -183,6 +186,22 @@ try
                     attempt, attempt * 2);
                 await Task.Delay(TimeSpan.FromSeconds(attempt * 2));
             }
+        }
+    }
+
+    // Seed a permanent demo account so recruiters can "Sign in as demo" without
+    // registering their own email. Idempotent — safe on every boot, and re-creates
+    // the account after an in-memory reset (sleep/restart wipes the in-memory DB).
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        if (!await db.Users.AnyAsync(u => u.Email == DemoAccount.Email))
+        {
+            var demo = new AppUser { Email = DemoAccount.Email };
+            demo.PasswordHash = new PasswordHasher<AppUser>().HashPassword(demo, DemoAccount.Password);
+            db.Users.Add(demo);
+            await db.SaveChangesAsync();
+            Log.Information("Seeded demo account {Email}", DemoAccount.Email);
         }
     }
 
